@@ -35,6 +35,7 @@
 #   Copenhagen, Denmark, Aug. 2007.
 #   http://www.acoustics.hut.fi/go/icmc07-parfilt
 
+import sys
 import numpy as np
 import scipy as sp
 import scipy.io as sio
@@ -42,9 +43,16 @@ from scipy.io import wavfile
 import scipy.signal as sig
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib import rc
+import textwrap
 
 from parfiltid import parfiltid
 from tfplot import tfplot, tfplots
+
+# Ignore warnings
+import warnings; warnings.filterwarnings('ignore')
+
+# OpenDRC likes 6148 taps
 
 def rceps(x): 
 	y = sp.real(sp.ifft(sp.log(sp.absolute(sp.fft(x)))))
@@ -62,13 +70,13 @@ def parfilt(Bm, Am, FIR, x):
 
 def norm(y): return y/np.fabs(y, dtype = np.float64).max()
 
-def roomcomp():
+def roomcomp(impresp, filter, target, ntaps):
 	
 	###
 	## Logarithmic pole positioning
 	###
 
-	Fs, data = wavfile.read('data/l48.wav')
+	Fs, data = wavfile.read(impresp)
 	data = norm(np.hstack(data))
 
 	# You may need to change this depending on the number of poles (more poles: larger, less poles: smaller)
@@ -109,8 +117,23 @@ def roomcomp():
 	# measured transfer function by the parallel filter
 	equalizedresp = norm(parfilt(Bm, Am, FIR, data))
 										   
-	# equalizer impulse response - filtering a unit pulse
-	equalizer = norm(parfilt(Bm, Am, FIR, imp))
+	# Equalizer impulse response - filtering a unit pulse
+	equalizer = sp.fft(parfilt(Bm, Am, FIR, imp))
+	
+	# Resample in the frequency domain
+	equalizer = sig.resample(equalizer, ntaps, window='hanning')
+	equalizer = norm(np.real(sp.ifft(equalizer)))
+	
+	# Write data
+	wavfile.write(filter, Fs, equalizer)
+	 
+	print '\nOutput filter length =', len(equalizer), 'taps'
+	print 'Output filter written to', filter
+
+	print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
+	print "or to merge left and right channels into a stereo .wav'"
+	print "\nExample: sox leq48.wav -t f32 filter.bin"
+	print "         sox -M le148.wav req48.wav output.wav\n"
 
 	###
 	## Plots
@@ -125,7 +148,7 @@ def roomcomp():
 	tfplot(equalizer, Fs)
 	# indicating pole frequencies
 	plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
-
+	
 	# equalized loudspeaker-room response
 	tfplot(equalizedresp*0.02, Fs, avg = 'abs')
 	# 1/3 Octave smoothed
@@ -145,6 +168,44 @@ def roomcomp():
 	plt.grid()
 	plt.legend()
 	plt.show()
+
+def main():
 	
-roomcomp()
+	print
+	
+	mtxt = textwrap.dedent('''\
+	Python Open Room Correction (PORC), version 0.1
+	Copyright (c) 2012 Mason A. Green
+	Based on the work of Dr. Balazs Bank
+	''')
+	
+	bye = textwrap.dedent('''
+	Example:
+	./porc -t b&k.txt -n 8000 l48.wav leq48.bin
+		
+	See the README for detailed instructions
+	''')
+	
+	import argparse
+	from argparse import RawTextHelpFormatter
+	
+	parser = argparse.ArgumentParser(description = mtxt, epilog=bye, formatter_class=RawTextHelpFormatter)	
+
+	# Positionals
+	parser.add_argument('impresp', metavar='I', type=str, help='mesaured impulse response')
+	parser.add_argument('filter', metavar='F', type=str, help='output filter file name')
+	
+	# Options
+	parser.add_argument("-t", dest="target",
+					  help="target curve", metavar="FILE")
+	parser.add_argument("-n", dest="ntaps", default = 65536,
+					  help="filter length, in taps. Default = 65536", type=int)
+		
+	args = parser.parse_args()
+
+	roomcomp(args.impresp, args.filter, args.target, args.ntaps)
+
+if __name__=="__main__":
+	main()	
+	
 
