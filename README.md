@@ -2,20 +2,20 @@ Python Open Room Correction (PORC)
 ==================================
 
 DSP Loudspeaker-Room correction filter wizard; transfer function modeling and equalization 
-by fixed-pole parallel filters.
-
-Algorithm ported to Python by Mason A. Green, based on the work of Dr. Balazs Bank:
-http://home.mit.bme.hu/~bank/parfilt/
+by fixed-pole parallel filters. Algorithm ported to Python by Mason A. Green, based on the work 
+of Dr. Balazs Bank: http://home.mit.bme.hu/~bank/parfilt/
 
 More details about Dr. Bank's parallel filter can be found in the papers:
 
-Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
-Second-Order Filters", IEEE Signal Processing Letters, 2008.
+	Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
+	Second-Order Filters", IEEE Signal Processing Letters, 2008.
+
 http://www.acoustics.hut.fi/go/spl08-parfilt
 
-Balazs Bank, "Direct Design of Parallel Second-order Filters for
-Instrument Body Modeling", International Computer Music Conference,
-Copenhagen, Denmark, Aug. 2007.
+	Balazs Bank, "Direct Design of Parallel Second-order Filters for
+	Instrument Body Modeling", International Computer Music Conference,
+	Copenhagen, Denmark, Aug. 2007.
+
 http://www.acoustics.hut.fi/go/icmc07-parfilt
 	
 Required Python dependencies:
