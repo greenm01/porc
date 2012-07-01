@@ -35,8 +35,13 @@
 #   Copenhagen, Denmark, Aug. 2007.
 #   http://www.acoustics.hut.fi/go/icmc07-parfilt
 
+# Python libs
 import sys
+import textwrap
+
+# Scipy, Numpy, and matplotlibs
 import numpy as np
+from numpy.linalg import lstsq
 import scipy as sp
 import scipy.io as sio
 from scipy.io import wavfile
@@ -44,15 +49,15 @@ import scipy.signal as sig
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import rc
-import textwrap
 
+# PORC source files
 from parfiltid import parfiltid
 from tfplot import tfplot, tfplots
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
 
-# OpenDRC likes 6148 taps
+# MiniDSP's OpenDRC box likes 6148 taps
 
 def rceps(x): 
 	y = sp.real(sp.ifft(sp.log(sp.absolute(sp.fft(x)))))
@@ -79,7 +84,8 @@ def roomcomp(impresp, filter, target, ntaps):
 	Fs, data = wavfile.read(impresp)
 	data = norm(np.hstack(data))
 
-	# You may need to change this depending on the number of poles (more poles: larger, less poles: smaller)
+	# You may need to change this depending on the number of poles 
+	# (more poles: larger, less poles: smaller)
 	R = 0.5 
 	# Two sets of log. resolution
 	fplog = np.hstack((sp.logspace(sp.log10(30.), sp.log10(200.), 13.), sp.logspace(sp.log10(250.), 
@@ -98,11 +104,18 @@ def roomcomp(impresp, filter, target, ntaps):
 	output = np.zeros(len(minresp), dtype=np.float64)
 	# target
 	output[0]=1.0
-
-	Bf, Af = sig.butter(4., 30./(Fs/2.), 'high')
-	# making the target output a 30 Hz highpass
-	outf = sig.lfilter(Bf, Af, output)
-
+	
+	outf = []
+	
+	if target is 'flat':
+		# Make the target output a bandpass filter
+		Bf, Af = sig.butter(4, 0, 'high')
+		outf = sig.lfilter(Bf, Af, output)
+	else:
+		# load target file
+		t = np.loadtxt(target)
+		outf = sp.fft(sig.resample(sp.ifft(t[:,1]), len(minresp)))
+	
 	imp = np.zeros(len(data), dtype=np.float64)
 	imp[0]=1.0
 
@@ -128,11 +141,11 @@ def roomcomp(impresp, filter, target, ntaps):
 	wavfile.write(filter, Fs, equalizer)
 	 
 	print '\nOutput filter length =', len(equalizer), 'taps'
-	print 'Output filter written to', filter
+	print 'Output filter written to ' + filter
 
 	print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-	print "or to merge left and right channels into a stereo .wav'"
-	print "\nExample: sox leq48.wav -t f32 filter.bin"
+	print "or to merge left and right channels into a stereo .wav"
+	print "\nExample: sox leq48.wav -t f32 leq48.bin"
 	print "         sox -M le148.wav req48.wav output.wav\n"
 
 	###
@@ -140,9 +153,9 @@ def roomcomp(impresp, filter, target, ntaps):
 	###
 	
 	# original loudspeaker-room response
-	tfplot(data*50, Fs, avg = 'abs')
+	tfplot(data*70, Fs, avg = 'abs')
 	# 1/3 Octave smoothed
-	tfplots(data*50, Fs, 'r')
+	tfplots(data*70, Fs, 'r')
 	
 	# equalizer transfer function
 	tfplot(equalizer, Fs)
@@ -150,21 +163,24 @@ def roomcomp(impresp, filter, target, ntaps):
 	plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
 	
 	# equalized loudspeaker-room response
-	tfplot(equalizedresp*0.02, Fs, avg = 'abs')
+	tfplot(equalizedresp*0.01, Fs, avg = 'abs')
 	# 1/3 Octave smoothed
-	tfplots(equalizedresp*0.02, Fs, 'r')
+	tfplots(equalizedresp*0.01, Fs, 'r')
+	
+	tfplot(norm(outf), Fs, 'r')
 	
 	# Add labels
-	plt.text(500,23,'Unequalized loudspeaker-room response')
-	plt.text(1000,8,'Equalizer transfer function')
-	plt.text(1000,4,'(Black lines: pole locations)')
+	# May need to reposition these based on input data
+	plt.text(325,23,'Unequalized loudspeaker-room response')
+	plt.text(100,-6,'Equalizer transfer function')
+	plt.text(100,-10,'(Black lines: pole locations)')
 	plt.text(200,-50,'Equalized loudspeaker-room response')
 
 	a = plt.gca()
 	a.set_xlim([20, 20000])
-	a.set_ylim([-60, 60])
+	a.set_ylim([-60, 65])
 	plt.ylabel('Amplitude (dB)', color='b')
-	plt.xlabel('Frequency (rad/sample)')
+	plt.xlabel('Frequency (Hz)')
 	plt.grid()
 	plt.legend()
 	plt.show()
@@ -196,7 +212,7 @@ def main():
 	parser.add_argument('filter', metavar='F', type=str, help='output filter file name')
 	
 	# Options
-	parser.add_argument("-t", dest="target",
+	parser.add_argument("-t", dest="target", default='flat',
 					  help="target curve", metavar="FILE")
 	parser.add_argument("-n", dest="ntaps", default = 65536,
 					  help="filter length, in taps. Default = 65536", type=int)
