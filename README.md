@@ -5,7 +5,7 @@ DSP Loudspeaker-Room correction filter wizard; transfer function modeling and eq
 by fixed-pole parallel filters. Algorithm ported to Python by Mason A. Green, based on the work 
 of Dr. Balazs Bank: http://home.mit.bme.hu/~bank/parfilt/
 
-![Room Correction Curve](http://github.com/zzzzrrr/porc/blob/master/data/eqplot.png) 
+![Room Correction Curve](data/eqplot.png) 
 
 More details about Dr. Bank's parallel filter can be found in the papers:
 
