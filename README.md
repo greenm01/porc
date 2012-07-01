@@ -4,7 +4,7 @@ Python Open Room Correction (PORC)
 DSP Loudspeaker-Room correction filter wizard; transfer function modeling and equalization 
 by fixed-pole parallel filters.
 
-Algorithm ported to Python by Mason A. Green <mason.green@gmail>, based on the work of Dr. Balazs Bank:
+Algorithm ported to Python by Mason A. Green, based on the work of Dr. Balazs Bank:
 http://home.mit.bme.hu/~bank/parfilt/
 
 More details about Dr. Bank's parallel filter can be found in the papers:
@@ -37,7 +37,7 @@ Usage
 
 porc.py [-h] [-t FILE] [-n NTAPS] I F
 
-Example: python porc.py -t tact30f.txt -n 6148 /data/l48.wav /data/leq48.wav
+	python porc.py -t tact30f.txt -n 6148 /data/l48.wav /data/leq48.wav
 
 Use the -h flag for help!
 
@@ -45,8 +45,8 @@ Use sox to convert output .wav to raw 32 bit IEEE floating point if necessary,
 or to merge left and right channels into a stereo .wav (use this method with
 MiniDSP's OpenDRC box)
 
-Examples: sox leq48.wav -t f32 leq48.bin
-          sox -M le148.wav req48.wav output.wav
+	sox leq48.wav -t f32 leq48.bin
+    sox -M le148.wav req48.wav output.wav
 
 Target Response
 ===============
@@ -62,8 +62,8 @@ http://www.bksv.com/doc/17-197.pdf
 PC Convolution
 ==============
 
-	Windows (foobar 2000)
-	Linux (jconvolver w/ jcgui)
+Windows (foobar 2000)
+Linux (jconvolver w/ jcgui)
 
 OpenDRC Convolution
 ===================
