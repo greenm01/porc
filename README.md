@@ -9,14 +9,14 @@ http://home.mit.bme.hu/~bank/parfilt/
 
 More details about Dr. Bank's parallel filter can be found in the papers:
 
-	Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
-	Second-Order Filters", IEEE Signal Processing Letters, 2008.
-	http://www.acoustics.hut.fi/go/spl08-parfilt
+Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
+Second-Order Filters", IEEE Signal Processing Letters, 2008.
+http://www.acoustics.hut.fi/go/spl08-parfilt
 
-	Balazs Bank, "Direct Design of Parallel Second-order Filters for
-	Instrument Body Modeling", International Computer Music Conference,
-	Copenhagen, Denmark, Aug. 2007.
-	http://www.acoustics.hut.fi/go/icmc07-parfilt
+Balazs Bank, "Direct Design of Parallel Second-order Filters for
+Instrument Body Modeling", International Computer Music Conference,
+Copenhagen, Denmark, Aug. 2007.
+http://www.acoustics.hut.fi/go/icmc07-parfilt
 	
 Required Python dependencies:
 
@@ -37,13 +37,12 @@ Usage
 
 porc.py [-h] [-t FILE] [-n NTAPS] I F
 
-	python porc.py -t tact30f.txt -n 6148 /data/l48.wav /data/leq48.wav
+	python porc.py -t tact30f.txt -n 6148 l48.wav leq48.wav
 
 Use the -h flag for help!
 
 Use sox to convert output .wav to raw 32 bit IEEE floating point if necessary,
-or to merge left and right channels into a stereo .wav (use this method with
-MiniDSP's OpenDRC box)
+or to merge left and right channels into a stereo .wav 
 
 	sox leq48.wav -t f32 leq48.bin
     sox -M le148.wav req48.wav output.wav
