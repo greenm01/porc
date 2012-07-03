@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 #
 # Python Open Room Correction (PORC)
 # Copyright (c) 2012 Mason A. Green
@@ -41,14 +41,12 @@ import textwrap
 
 # Scipy, Numpy, and matplotlibs
 import numpy as np
-from numpy.linalg import lstsq
 import scipy as sp
 import scipy.io as sio
 from scipy.io import wavfile
 import scipy.signal as sig
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib import rc
+from scikits.audiolab import Format, Sndfile
 
 # PORC source files
 from parfiltid import parfiltid
@@ -57,7 +55,7 @@ from tfplot import tfplot, tfplots
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
 
-# MiniDSP's OpenDRC box likes 6148 taps
+# MiniDSP's OpenDRC box likes 6144 taps
 
 def rceps(x): 
 	y = sp.real(sp.ifft(sp.log(sp.absolute(sp.fft(x)))))
@@ -73,7 +71,8 @@ def parfilt(Bm, Am, FIR, x):
 	y += np.ravel(sig.lfilter(np.hstack([FIR]), np.hstack([1]), x))
 	return y
 
-def norm(y): return y/np.fabs(y, dtype = np.float64).max()
+# Normalize signal
+def norm(y): return y/np.fabs(y).max()
 
 def roomcomp(impresp, filter, target, ntaps):
 	
@@ -109,12 +108,12 @@ def roomcomp(impresp, filter, target, ntaps):
 	
 	if target is 'flat':
 		# Make the target output a bandpass filter
-		Bf, Af = sig.butter(4, 0, 'high')
+		Bf, Af = sig.butter(4, 0.0, 'high')
 		outf = sig.lfilter(Bf, Af, output)
 	else:
 		# load target file
 		t = np.loadtxt(target)
-		outf = sp.fft(sig.resample(sp.ifft(t[:,1]), len(minresp)))
+		outf = np.real(sp.fft(sig.resample(sp.ifft(t[:,1]), len(minresp))))
 	
 	imp = np.zeros(len(data), dtype=np.float64)
 	imp[0]=1.0
@@ -129,7 +128,7 @@ def roomcomp(impresp, filter, target, ntaps):
 	# equalized loudspeaker response - filtering the 
 	# measured transfer function by the parallel filter
 	equalizedresp = norm(parfilt(Bm, Am, FIR, data))
-										   
+
 	# Equalizer impulse response - filtering a unit pulse
 	equalizer = sp.fft(parfilt(Bm, Am, FIR, imp))
 	
@@ -137,9 +136,18 @@ def roomcomp(impresp, filter, target, ntaps):
 	equalizer = sig.resample(equalizer, ntaps, window='hanning')
 	equalizer = norm(np.real(sp.ifft(equalizer)))
 	
-	# Write data
-	wavfile.write(filter, Fs, equalizer)
-	 
+	# TODO: Fix the scipi.io wavfile.write method?
+	# For whatver reason, I can't get Scipy's wav io to work with
+	# sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
+	# Audiolab works well below, but it's an extra set of dependencies
+	#wavfile.write(filter, Fs, equalizer.astype(np.float16))
+	
+	# Write data, convert to 16 bits
+	format = Format('wav')
+	f = Sndfile(filter, 'w', format, 1, Fs)
+	f.write_frames(equalizer)
+	f.close
+	
 	print '\nOutput filter length =', len(equalizer), 'taps'
 	print 'Output filter written to ' + filter
 
@@ -152,10 +160,11 @@ def roomcomp(impresp, filter, target, ntaps):
 	## Plots
 	###
 	
+	data *= 50
 	# original loudspeaker-room response
-	tfplot(data*70, Fs, avg = 'abs')
+	tfplot(data, Fs, avg = 'abs')
 	# 1/3 Octave smoothed
-	tfplots(data*70, Fs, 'r')
+	tfplots(data, Fs, 'r')
 	
 	# equalizer transfer function
 	tfplot(equalizer, Fs)
@@ -167,7 +176,7 @@ def roomcomp(impresp, filter, target, ntaps):
 	# 1/3 Octave smoothed
 	tfplots(equalizedresp*0.01, Fs, 'r')
 	
-	tfplot(norm(outf), Fs, 'r')
+	#tfplot(norm(outf), Fs, 'r')
 	
 	# Add labels
 	# May need to reposition these based on input data

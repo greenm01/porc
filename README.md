@@ -20,9 +20,12 @@ http://www.acoustics.hut.fi/go/icmc07-parfilt
 	
 Required Python dependencies:
 
-	1) SciPy
-	2) Numpy
-	3) Matplotlib
+	1) Scientific Python: SciPy, Numpy, & Matplotlib
+	2) Scikits.audiolab
+	3) libsndfile
+
+This is a command line tool. Matplotlib will produce very nice graphs; if you desire a GUI 
+feel free to fork this project.
 
 Measurement
 ===========
@@ -41,34 +44,43 @@ porc.py [-h] [-t FILE] [-n NTAPS] I F
 
 Use the -h flag for help!
 
-Use sox to convert output .wav to raw 32 bit IEEE floating point if necessary,
-or to merge left and right channels into a stereo .wav 
-
-	sox leq48.wav -t f32 leq48.bin
-    sox -M le148.wav req48.wav output.wav
+PORC has been tested successfully on both Linux and Windows 7 with Python 2.7. Linux depenency 
+install is fairly straightforward. Windows install packages are available for all dependencies.
 
 Target Response
 ===============
 
 The default target curve for PORC is flat. Included in the data directory are a number 
-of target curves. Experiment to suit your listening preferences (I prefer tact30f.txt, bk-48.txt, 
-and pa-48.0.0.txt).
+of target curves. Experiment to suit your listening preferences (I prefer tact30f.txt, 
+bk-48.txt).
 
-The B&K House Curve is a good place to start. Read "Relevant loudspeaker tests 
-in studios in Hi-Fi dealers' demo rooms in the home etc," Figure 5:
+For further reference, the B&K House Curve is a good place to start. Read "Relevant loudspeaker 
+tests in studios in Hi-Fi dealers' demo rooms in the home etc.," Figure 5:
 http://www.bksv.com/doc/17-197.pdf
 
 PC Convolution
 ==============
 
-Windows (foobar 2000)
-Linux (jconvolver w/ jcgui)
+Suggestions:
+
+Windows (foobar2000 convolver)
+Linux (jconvolver w/ jcgui & Jack)
+
+You may need to merge left and right channels into a single stereo .wav 
+
+    sox -M le148.wav req48.wav equalizer.wav
+
 
 OpenDRC Convolution
 ===================
 
+Use sox to convert output .wav to raw 32 bit IEEE floating point mono for the left & right channels
+
+	sox leq48.wav -t f32 leq48.bin
+	sox req48.wav -t f32 req48.bin
+
 TODO
 ====
 
-	Update this page with better documentation
+	Update this page with better documentation!
 	
