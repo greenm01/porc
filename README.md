@@ -20,9 +20,10 @@ http://www.acoustics.hut.fi/go/icmc07-parfilt
 	
 Required Python dependencies:
 
-	1) Scientific Python: SciPy, Numpy, & Matplotlib
-	2) Scikits.audiolab
-	3) libsndfile
+	1) Python 2.7
+	2) Scientific Python: SciPy, Numpy, & Matplotlib
+	3) Scikits.audiolab
+	4) libsndfile
 
 This is a command line tool. Matplotlib will produce very nice graphs; if you desire a GUI 
 feel free to fork this project.
