@@ -7,23 +7,23 @@ of Dr. Balazs Bank: http://home.mit.bme.hu/~bank/parfilt/
 
 More details about Dr. Bank's parallel filter can be found in the papers:
 
-	Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
-	Second-Order Filters", IEEE Signal Processing Letters, 2008.
+    Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
+    Second-Order Filters", IEEE Signal Processing Letters, 2008.
 
 http://www.acoustics.hut.fi/go/spl08-parfilt
 
-	Balazs Bank, "Direct Design of Parallel Second-order Filters for
-	Instrument Body Modeling", International Computer Music Conference,
-	Copenhagen, Denmark, Aug. 2007.
+    Balazs Bank, "Direct Design of Parallel Second-order Filters for
+    Instrument Body Modeling", International Computer Music Conference,
+    Copenhagen, Denmark, Aug. 2007.
 
 http://www.acoustics.hut.fi/go/icmc07-parfilt
-	
+    
 Required Python dependencies:
 
-	1) Python 2.7
-	2) Scientific Python: SciPy, Numpy, & Matplotlib
-	3) Scikits.audiolab
-	4) libsndfile
+    1) Python 2.7
+    2) Scientific Python: SciPy, Numpy, & Matplotlib
+    3) Scikits.audiolab
+    4) libsndfile
 
 This is a command line tool. Matplotlib will produce very nice graphs; if you desire a GUI 
 feel free to fork this project.
@@ -41,7 +41,7 @@ Usage
 
 porc.py [-h] [-t FILE] [-n NTAPS] I F
 
-	python porc.py -t tact30f.txt -n 6148 l48.wav leq48.wav
+    python porc.py -t tact30f.txt -n 6148 l48.wav leq48.wav
 
 Use the -h flag for help!
 
@@ -52,8 +52,11 @@ Target Response
 ===============
 
 The default target curve for PORC is flat. Included in the data directory are a number 
-of target curves. Experiment to suit your listening preferences (I prefer tact30f.txt, 
-bk-48.txt).
+of target curves. Experiment to suit your listening preferences. Use the [-t] flag to load a target
+file.
+
+One may also target a flat curve, and then use separate parametric equalization for bass boosting
+and other pschoaccoustic preferences. 
 
 For further reference, the B&K House Curve is a good place to start. Read "Relevant loudspeaker 
 tests in studios in Hi-Fi dealers' demo rooms in the home etc.," Figure 5:
@@ -77,11 +80,11 @@ OpenDRC Convolution
 
 Use sox to convert output .wav to raw 32 bit IEEE floating point mono for the left & right channels
 
-	sox leq48.wav -t f32 leq48.bin
-	sox req48.wav -t f32 req48.bin
+    sox leq48.wav -t f32 leq48.bin
+    sox req48.wav -t f32 req48.bin
 
 TODO
 ====
 
-	Update this page with better documentation!
-	
+    Update this page with better documentation!
+    
