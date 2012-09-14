@@ -140,8 +140,7 @@ def roomcomp(impresp, filter, target, ntaps):
     equalizer = norm(parfilt(Bm, Am, FIR, imp))
     
     # Downsample with a half hanning window in time domain
-    h = np.hanning(ntaps*2)
-    h = h[-ntaps:]
+    h = np.hanning(ntaps*2)[-ntaps:]
     equalizer = h * equalizer[:ntaps]
     
     # TODO: Fix the scipi.io wavfile.write method?
