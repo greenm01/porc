@@ -44,6 +44,7 @@ import numpy as np
 import scipy as sp
 import scipy.io as sio
 import scipy.signal as sig
+from scipy.fftpack import ifft, fft
 from scipy.interpolate import UnivariateSpline
 from scipy.io import wavfile
 from scipy.ndimage import convolve1d
@@ -61,10 +62,10 @@ import warnings; warnings.filterwarnings('ignore')
 # MiniDSP's OpenDRC box likes 6144 taps
 
 def rceps(x): 
-    y = sp.real(sp.ifft(sp.log(sp.absolute(sp.fft(x)))))
+    y = sp.real(ifft(sp.log(sp.absolute(fft(x)))))
     n = len(x)
     w = np.hstack((1., 2.*np.ones(n/2-1), np.ones(1-n%2), np.zeros(n/2-1)))
-    ym = sp.real(sp.ifft(sp.exp(sp.fft(w*y)))) 
+    ym = sp.real(ifft(sp.exp(fft(w*y)))) 
     return (y, ym)
 
 def parfilt(Bm, Am, FIR, x):
@@ -77,6 +78,9 @@ def parfilt(Bm, Am, FIR, x):
 # Normalize signal
 def norm(y): return y/np.fabs(y).max()
 
+def dB2Mag(dB):
+    return 10**((dB)/20.)
+    
 def roomcomp(impresp, filter, target, ntaps):
     
     ###
@@ -86,6 +90,8 @@ def roomcomp(impresp, filter, target, ntaps):
     Fs, data = wavfile.read(impresp)
     data = norm(np.hstack(data))
 
+    print "Sample rate = ", Fs
+    
     # You may need to change this depending on the number of poles 
     # (more poles: larger, less poles: smaller)
     R = 0.5 
@@ -103,27 +109,24 @@ def roomcomp(impresp, filter, target, ntaps):
 
     # making the measured response minumum-phase
     cp, minresp = rceps(data)
-    output = np.zeros(len(minresp), dtype=np.float64)
-    # target
-    output[0]=1.0
     
+    # Impulse response
+    imp = np.zeros(len(data), dtype=np.float64)
+    imp[0]=1.0
+    
+    # Target
     outf = []
-    
-    print "Sample rate = ", Fs
     
     if target is 'flat':
         # Make the target output a bandpass filter
         Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
-        outf = sig.lfilter(Bf, Af, output)
+        outf = sig.lfilter(Bf, Af, imp)
     else:
         # load target file
         t = np.loadtxt(target)
         frq = t[:,0]; db = t[:,1]
         f = UnivariateSpline(frq, db, k = 1)
-        outf = sig.ifft(f(np.linspace(0, frq[-1], len(data)))) 
-        
-    imp = np.zeros(len(data), dtype=np.float64)
-    imp[0]=1.0
+        outf = ifft(f(np.linspace(0, frq[-1], len(data))))
 
     ###
     ## Filter design
@@ -134,12 +137,12 @@ def roomcomp(impresp, filter, target, ntaps):
 
     # equalized loudspeaker response - filtering the 
     # measured transfer function by the parallel filter
-    equalizedresp = norm(parfilt(Bm, Am, FIR, data))
+    equalizedresp = parfilt(Bm, Am, FIR, data)
 
     # Equalizer impulse response - filtering a unit pulse
     equalizer = norm(parfilt(Bm, Am, FIR, imp))
     
-    # Downsample with a half hanning window in time domain
+    # Windowing with a half hanning window in time domain
     h = np.hanning(ntaps*2)[-ntaps:]
     equalizer = h * equalizer[:ntaps]
     
