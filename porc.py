@@ -45,7 +45,7 @@ import scipy as sp
 import scipy.io as sio
 import scipy.signal as sig
 from scipy.fftpack import ifft, fft
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import pchip
 from scipy.io import wavfile
 from scipy.ndimage import convolve1d
 import matplotlib.pyplot as plt
@@ -54,7 +54,7 @@ import sys
 
 # PORC source files
 from parfiltid import parfiltid
-from tfplot import tfplot, tfplots
+from tfplot import tfplot, tfplots, debug_log_plot
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -116,18 +116,31 @@ def roomcomp(impresp, filter, target, ntaps):
     
     # Target
     outf = []
+    db = []
     
     if target is 'flat':
+		
         # Make the target output a bandpass filter
         Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
         outf = sig.lfilter(Bf, Af, imp)
+        
     else:
-        # load target file
-        t = np.loadtxt(target)
-        frq = t[:,0]; db = t[:,1]
-        f = UnivariateSpline(frq, db, k = 1)
-        outf = ifft(f(np.linspace(0, frq[-1], len(data))))
-
+		
+		# load target file
+		t = np.loadtxt(target)
+		frq = t[:,0]; 
+		
+		# convert from decibals to linear scale
+		pwr = np.power(10, t[:,1]) / 20.0
+		# cubic spline
+		f = pchip(frq, pwr)
+		frq = np.logspace(np.log10(1), np.log10(20000), len(data))
+		pwr = f(frq)
+		
+		# Convert to time domain
+		outf, x = rceps(ifft(pwr))
+		#debug_log_plot(frq, pwr)
+		
     ###
     ## Filter design
     ###
@@ -176,22 +189,26 @@ def roomcomp(impresp, filter, target, ntaps):
     # 1/3 Octave smoothed
     tfplots(data, Fs, 'r')
     
+    # target curve
+    #tfplots(db, Fs, 'r')
+    #tfplot(outf, Fs, 'b')
+    
     # equalizer transfer function
     tfplot(0.75*equalizer, Fs, 'g')
     # indicating pole frequencies
     plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
     
     # equalized loudspeaker-room response
-    tfplot(equalizedresp*0.001, Fs, avg = 'abs')
+    tfplot(equalizedresp*0.01, Fs, avg = 'abs')
     # 1/3 Octave smoothed
-    tfplots(equalizedresp*0.001, Fs, 'r')
+    tfplots(equalizedresp*0.01, Fs, 'r')
     
     # Add labels
     # May need to reposition these based on input data
     plt.text(325,30,'Unequalized loudspeaker-room response')
     plt.text(100,-15,'Equalizer transfer function')
     plt.text(100,-21,'(Black lines: pole locations)')
-    plt.text(150,-75,'Equalized loudspeaker-room response')
+    plt.text(130,-70,'Equalized loudspeaker-room response')
 
     a = plt.gca()
     a.set_xlim([20, 20000])

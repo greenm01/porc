@@ -21,7 +21,7 @@ http://www.acoustics.hut.fi/go/icmc07-parfilt
 Required Python dependencies:
 
     1) Python 2.7
-    2) Scientific Python: SciPy, Numpy, & Matplotlib
+    2) Scientific Python: SciPy >= v0.11, Numpy, & Matplotlib
     3) Scikits.audiolab
     4) libsndfile
 

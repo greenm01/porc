@@ -157,3 +157,13 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 	# plotting
 	plt.semilogx(logscale, 20*np.log10(logmagn), color)
 	
+def debug_log_plot(x, y):
+	fig = plt.figure()
+	plt.title("Digital filter frequency response")
+	ax = fig.add_subplot(111)
+	plt.semilogx(x, y, 'b')
+	plt.ylabel('Amplitude (power)', color='b')
+	plt.xlabel('Frequency (rad/sample)')
+	plt.grid()
+	plt.legend()
+	plt.show()
