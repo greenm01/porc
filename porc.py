@@ -122,7 +122,7 @@ def roomcomp(impresp, filter, target, ntaps):
 		
         # Make the target output a bandpass filter
         Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
-        outf = sig.lfilter(Bf, Af, imp)
+        outf = sig.lfilter(Bf, Af, imp) 
         
     else:
 		
@@ -131,15 +131,15 @@ def roomcomp(impresp, filter, target, ntaps):
 		frq = t[:,0]; 
 		
 		# convert from decibals to linear scale
-		pwr = np.power(10, t[:,1]) / 20.0
+		pwr = np.power(10, t[:,1] / 20.0)
 		# cubic spline
 		f = pchip(frq, pwr)
 		frq = np.logspace(np.log10(1), np.log10(20000), len(data))
 		pwr = f(frq)
 		
 		# Convert to time domain
-		outf, x = rceps(ifft(pwr))
-		#debug_log_plot(frq, pwr)
+		outf, cp = rceps(ifft(pwr))
+		#debug_log_plot(frq, t[:,1])
 		
     ###
     ## Filter design
@@ -190,7 +190,6 @@ def roomcomp(impresp, filter, target, ntaps):
     tfplots(data, Fs, 'r')
     
     # target curve
-    #tfplots(db, Fs, 'r')
     #tfplot(outf, Fs, 'b')
     
     # equalizer transfer function
