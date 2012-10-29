@@ -55,6 +55,7 @@ import sys
 # PORC source files
 from parfiltid import parfiltid
 from tfplot import tfplot, tfplots, debug_log_plot
+from freqpoles import freqpoles
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -82,49 +83,43 @@ def dB2Mag(dB):
     return 10**((dB)/20.)
     
 def roomcomp(impresp, filter, target, ntaps):
-    
-    ###
-    ## Logarithmic pole positioning
-    ###
 
-    Fs, data = wavfile.read(impresp)
-    data = norm(np.hstack(data))
+	# Read impulse response
+	Fs, data = wavfile.read(impresp)
+	data = norm(np.hstack(data))
 
-    print "Sample rate = ", Fs
-    
-    # You may need to change this depending on the number of poles 
-    # (more poles: larger, less poles: smaller)
-    R = 0.5
-    # Two sets of log. resolution
-    fplog = np.hstack((sp.logspace(sp.log10(30.), sp.log10(200.), 13.), sp.logspace(sp.log10(250.), 
-                       sp.log10(18000.), 12.))) 
+	print "Sample rate = ", Fs
 
-    wp = 2 * sp.pi * fplog / Fs
-    p = np.power(R, wp/sp.pi) * np.exp(1j*wp)
-    plog = np.hstack((p, np.conj(p)))
+	###
+	## Logarithmic pole positioning
+	###
 
-    ###
-    ## Preparing data
-    ###
+	fplog = np.hstack((sp.logspace(sp.log10(30.), sp.log10(200.), 13.), sp.logspace(sp.log10(250.), 
+					   sp.log10(18000.), 12.))) 
+	plog = freqpoles(fplog, Fs)
 
-    # making the measured response minumum-phase
-    cp, minresp = rceps(data)
-    
-    # Impulse response
-    imp = np.zeros(len(data), dtype=np.float64)
-    imp[0]=1.0
-    
-    # Target
-    outf = []
-    db = []
-    
-    if target is 'flat':
+	###
+	## Preparing data
+	###
+
+	# making the measured response minumum-phase
+	cp, minresp = rceps(data)
+
+	# Impulse response
+	imp = np.zeros(len(data), dtype=np.float64)
+	imp[0]=1.0
+
+	# Target
+	outf = []
+	db = []
+
+	if target is 'flat':
 		
-        # Make the target output a bandpass filter
-        Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
-        outf = sig.lfilter(Bf, Af, imp) 
-        
-    else:
+		# Make the target output a bandpass filter
+		Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
+		outf = sig.lfilter(Bf, Af, imp) 
+		
+	else:
 		
 		# load target file
 		t = np.loadtxt(target)
@@ -136,85 +131,85 @@ def roomcomp(impresp, filter, target, ntaps):
 		cp, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
 		
 		
-    ###
-    ## Filter design
-    ###
+	###
+	## Filter design
+	###
 
-    #Parallel filter design
-    (Bm, Am, FIR) = parfiltid(minresp, outf, plog)
+	#Parallel filter design
+	(Bm, Am, FIR) = parfiltid(minresp, outf, plog)
 
-    # equalized loudspeaker response - filtering the 
-    # measured transfer function by the parallel filter
-    equalizedresp = parfilt(Bm, Am, FIR, data)
+	# equalized loudspeaker response - filtering the 
+	# measured transfer function by the parallel filter
+	equalizedresp = parfilt(Bm, Am, FIR, data)
 
-    # Equalizer impulse response - filtering a unit pulse
-    equalizer = norm(parfilt(Bm, Am, FIR, imp))
-    
-    # Windowing with a half hanning window in time domain
-    h = np.hanning(ntaps*2)[-ntaps:]
-    equalizer = h * equalizer[:ntaps]
-    
-    # TODO: Fix the scipi.io wavfile.write method?
-    # For whatver reason, I can't get Scipy's wav io to work with
-    # sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
-    # Audiolab works well below, but it's an extra set of dependencies
-    #wavfile.write(filter, Fs, equalizer.astype(np.float16))
-    
-    # Write data, convert to 16 bits
-    format = Format('wav')
-    f = Sndfile(filter, 'w', format, 1, Fs)
-    f.write_frames(equalizer)
-    f.close
-    
-    f = Sndfile("eq.wav", 'w', format, 1, Fs)
-    f.write_frames(equalizedresp)
-    f.close
-    
-    print '\nOutput filter length =', len(equalizer), 'taps'
-    print 'Output filter written to ' + filter
+	# Equalizer impulse response - filtering a unit pulse
+	equalizer = norm(parfilt(Bm, Am, FIR, imp))
 
-    print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-    print "or to merge left and right channels into a stereo .wav"
-    print "\nExample: sox leq48.wav -t f32 leq48.bin"
-    print "         sox -M le148.wav req48.wav output.wav\n"
+	# Windowing with a half hanning window in time domain
+	h = np.hanning(ntaps*2)[-ntaps:]
+	equalizer = h * equalizer[:ntaps]
 
-    ###
-    ## Plots
-    ###
-    
-    data *= 500
-    # original loudspeaker-room response
-    tfplot(data, Fs, avg = 'abs')
-    # 1/3 Octave smoothed
-    tfplots(data, Fs, 'r')
-    
-    tfplot(outf, Fs, 'r')
-    
-    # equalizer transfer function
-    tfplot(0.75*equalizer, Fs, 'g')
-    # indicating pole frequencies
-    plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
-    
-    # equalized loudspeaker-room response
-    tfplot(equalizedresp*0.01, Fs, avg = 'abs')
-    # 1/3 Octave smoothed
-    tfplots(equalizedresp*0.01, Fs, 'r')
-    
-    # Add labels
-    # May need to reposition these based on input data
-    plt.text(325,30,'Unequalized loudspeaker-room response')
-    plt.text(100,-15,'Equalizer transfer function')
-    plt.text(100,-21,'(Black lines: pole locations)')
-    plt.text(130,-70,'Equalized loudspeaker-room response')
+	# TODO: Fix the scipi.io wavfile.write method?
+	# For whatver reason, I can't get Scipy's wav io to work with
+	# sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
+	# Audiolab works well below, but it's an extra set of dependencies
+	#wavfile.write(filter, Fs, equalizer.astype(np.float16))
 
-    a = plt.gca()
-    a.set_xlim([20, 20000])
-    a.set_ylim([-80, 80])
-    plt.ylabel('Amplitude (dB)', color='b')
-    plt.xlabel('Frequency (Hz)')
-    plt.grid()
-    plt.legend()
-    plt.show()
+	# Write data, convert to 16 bits
+	format = Format('wav')
+	f = Sndfile(filter, 'w', format, 1, Fs)
+	f.write_frames(equalizer)
+	f.close
+
+	f = Sndfile("eq.wav", 'w', format, 1, Fs)
+	f.write_frames(equalizedresp)
+	f.close
+
+	print '\nOutput filter length =', len(equalizer), 'taps'
+	print 'Output filter written to ' + filter
+
+	print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
+	print "or to merge left and right channels into a stereo .wav"
+	print "\nExample: sox leq48.wav -t f32 leq48.bin"
+	print "         sox -M le148.wav req48.wav output.wav\n"
+
+	###
+	## Plots
+	###
+
+	data *= 500
+	# original loudspeaker-room response
+	tfplot(data, Fs, avg = 'abs')
+	# 1/3 Octave smoothed
+	tfplots(data, Fs, 'r')
+
+	tfplot(outf, Fs, 'r')
+
+	# equalizer transfer function
+	tfplot(0.75*equalizer, Fs, 'g')
+	# indicating pole frequencies
+	plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
+
+	# equalized loudspeaker-room response
+	tfplot(equalizedresp*0.01, Fs, avg = 'abs')
+	# 1/3 Octave smoothed
+	tfplots(equalizedresp*0.01, Fs, 'r')
+
+	# Add labels
+	# May need to reposition these based on input data
+	plt.text(325,30,'Unequalized loudspeaker-room response')
+	plt.text(100,-15,'Equalizer transfer function')
+	plt.text(100,-21,'(Black lines: pole locations)')
+	plt.text(130,-70,'Equalized loudspeaker-room response')
+
+	a = plt.gca()
+	a.set_xlim([20, 20000])
+	a.set_ylim([-80, 80])
+	plt.ylabel('Amplitude (dB)', color='b')
+	plt.xlabel('Frequency (Hz)')
+	plt.grid()
+	plt.legend()
+	plt.show()
 
 def main():
     
