@@ -94,7 +94,7 @@ def roomcomp(impresp, filter, target, ntaps):
     
     # You may need to change this depending on the number of poles 
     # (more poles: larger, less poles: smaller)
-    R = 0.5 
+    R = 0.5
     # Two sets of log. resolution
     fplog = np.hstack((sp.logspace(sp.log10(30.), sp.log10(200.), 13.), sp.logspace(sp.log10(250.), 
                        sp.log10(18000.), 12.))) 
@@ -128,18 +128,13 @@ def roomcomp(impresp, filter, target, ntaps):
 		
 		# load target file
 		t = np.loadtxt(target)
-		frq = t[:,0]; 
+		frq = t[:,0]; pwr = t[:,1]
 		
-		# convert from decibals to linear scale
-		pwr = np.power(10, t[:,1] / 20.0)
-		# cubic spline
-		f = pchip(frq, pwr)
-		frq = np.logspace(np.log10(1), np.log10(20000), len(data))
-		pwr = f(frq)
+		# calculate the FIR filter via windowing method
+		fir = sig.firwin2(501, frq, np.power(10, pwr/20.0), nyq = frq[-1])	
+		# Minimum phase, zero padding	
+		cp, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
 		
-		# Convert to time domain
-		outf, cp = rceps(ifft(pwr))
-		#debug_log_plot(frq, t[:,1])
 		
     ###
     ## Filter design
@@ -171,6 +166,10 @@ def roomcomp(impresp, filter, target, ntaps):
     f.write_frames(equalizer)
     f.close
     
+    f = Sndfile("eq.wav", 'w', format, 1, Fs)
+    f.write_frames(equalizedresp)
+    f.close
+    
     print '\nOutput filter length =', len(equalizer), 'taps'
     print 'Output filter written to ' + filter
 
@@ -189,8 +188,7 @@ def roomcomp(impresp, filter, target, ntaps):
     # 1/3 Octave smoothed
     tfplots(data, Fs, 'r')
     
-    # target curve
-    #tfplot(outf, Fs, 'b')
+    tfplot(outf, Fs, 'r')
     
     # equalizer transfer function
     tfplot(0.75*equalizer, Fs, 'g')
