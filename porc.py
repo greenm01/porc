@@ -94,8 +94,8 @@ def roomcomp(impresp, filter, target, ntaps):
 	## Logarithmic pole positioning
 	###
 
-	fplog = np.hstack((sp.logspace(sp.log10(30.), sp.log10(200.), 13.), sp.logspace(sp.log10(250.), 
-					   sp.log10(18000.), 12.))) 
+	fplog = np.hstack((sp.logspace(sp.log10(20.), sp.log10(200.), 14.), sp.logspace(sp.log10(250.), 
+					   sp.log10(20000.), 13.))) 
 	plog = freqpoles(fplog, Fs)
 
 	###
