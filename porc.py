@@ -63,12 +63,15 @@ import warnings; warnings.filterwarnings('ignore')
 # MiniDSP's OpenDRC box likes 6144 taps
 
 def rceps(x): 
-    y = sp.real(ifft(sp.log(sp.absolute(fft(x)))))
-    n = len(x)
-    w = np.hstack((1., 2.*np.ones(n/2-1), np.ones(1-n%2), np.zeros(n/2-1)))
-    ym = sp.real(ifft(sp.exp(fft(w*y)))) 
-    return (y, ym)
-
+	y = sp.real(ifft(sp.log(sp.absolute(fft(x)))))
+	n = len(x) 
+	if (n%2) == 1:
+		ym = np.hstack((y[0], 2*y[1:n/2], np.zeros(n/2-1)))
+	else:
+		ym = np.hstack((y[0], 2*y[1:n/2], y[n/2+1], np.zeros(n/2-1)))
+	ym = sp.real(ifft(sp.exp(fft(ym)))) 
+	return (y, ym)
+    
 def parfilt(Bm, Am, FIR, x):
     y = np.zeros(x.size)
     for k in range(Am.shape[1]):
@@ -88,6 +91,9 @@ def roomcomp(impresp, filter, target, ntaps):
 	Fs, data = wavfile.read(impresp)
 	data = norm(np.hstack(data))
 
+	if ntaps == -69:
+		ntaps = len(data)
+		
 	print "Sample rate = ", Fs
 
 	###
@@ -240,8 +246,8 @@ def main():
     # Options
     parser.add_argument("-t", dest="target", default='flat',
                       help="target curve", metavar="FILE")
-    parser.add_argument("-n", dest="ntaps", default = 65536,
-                      help="filter length, in taps. Default = 65536", type=int)
+    parser.add_argument("-n", dest="ntaps", default = -69,
+                      help="filter length, in taps. Default = len(input)", type=int)
         
     args = parser.parse_args()
 
