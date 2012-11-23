@@ -1,6 +1,8 @@
 Python Open Room Correction (PORC)
 ==================================
 
+PORC now includes mixed-phase compensation (see below)!
+
 DSP Loudspeaker-Room correction filter wizard; transfer function modeling and equalization 
 by fixed-pole parallel filters. Algorithm ported to Python by Mason A. Green, based on the work 
 of Dr. Balazs Bank: http://home.mit.bme.hu/~bank/parfilt/
@@ -8,25 +10,32 @@ of Dr. Balazs Bank: http://home.mit.bme.hu/~bank/parfilt/
 More details about Dr. Bank's parallel filter can be found in the papers:
 
     Balazs Bank, "Perceptually Motivated Audio Equalization Using Fixed-Pole Parallel
-    Second-Order Filters", IEEE Signal Processing Letters, 2008.
+    Second-Order Filters," IEEE Signal Processing Letters, 2008.
 
 http://www.acoustics.hut.fi/go/spl08-parfilt
 
     Balazs Bank, "Direct Design of Parallel Second-order Filters for
-    Instrument Body Modeling", International Computer Music Conference,
+    Instrument Body Modeling," International Computer Music Conference,
     Copenhagen, Denmark, Aug. 2007.
 
 http://www.acoustics.hut.fi/go/icmc07-parfilt
     
+Mixed-Phase Compensation references:
+
+	Alberto Carini, et al, "Mixed Time-Frequency approach for Multipoint
+	Room Response Equalization," AES 45th International Conference, 2012
+	
+	Defrance & Polak, "Measuring the mixing time in auditoria," Acoustics
+	Paris 2008
+	
 Required Python dependencies:
 
     1) Python 2.7
-    2) Scientific Python: SciPy >= v0.11, Numpy, & Matplotlib
+    2) Scientific Python: SciPy (v0.11+), Numpy, & Matplotlib
     3) Scikits.audiolab
     4) libsndfile
 
-This is a command line tool. Matplotlib will produce very nice graphs; if you desire a GUI 
-feel free to fork this project.
+This is a command line tool.
 
 Measurement
 ===========
@@ -39,7 +48,7 @@ http://www.hometheatershack.com/roomeq/
 Usage
 =====
 
-porc.py [-h] [-t FILE] [-n NTAPS] I F
+porc.py [-h] [--mixed] [-t FILE] [-n NTAPS] input_file output_file
 
     python porc.py -t tact30f.txt -n 6148 l48.wav leq48.wav
 
@@ -61,6 +70,19 @@ and other pschoaccoustic preferences.
 For further reference, the B&K House Curve is a good place to start. Read "Relevant loudspeaker 
 tests in studios in Hi-Fi dealers' demo rooms in the home etc.," Figure 5:
 http://www.bksv.com/doc/17-197.pdf
+
+Mixed-Phase Compensation
+==============
+
+To use mixed-phase compensation, one needs to specify the [--mixed] flag. One also needs to modify
+the Room Impulse Response (RIR) to remove leading silence (zeros) before the main impulse. You can
+easily do this with Audacity or REQ.
+
+Example:
+
+	python porc.py --mixed -t tact30f.txt -n 6148 l48.wav leq48.wav
+	
+Have some patience with this method. The convolution takes a few CPU cycles.
 
 PC Convolution
 ==============
@@ -86,5 +108,11 @@ Use sox to convert output .wav to raw 32 bit IEEE floating point mono for the le
 TODO
 ====
 
+	Implement algo to automatically remove leading silence from RIR.
+	Port this code to C 
     Update this page with better documentation!
-    
+
+Contact
+=======
+
+Complaints, suggestions, bugfixes: mason dot green at gmail
