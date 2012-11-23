@@ -212,8 +212,8 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase):
 		equalizer = conv(equalizer, mixed)
 		equalizer = han * equalizer[:ntaps]
 		
-		#data = han * data[:ntaps]
-		#eqresp = np.real(conv(equalizer, data))
+		data = han * data[:ntaps]
+		eqresp = np.real(conv(equalizer, data))
 		
 	# TODO: Fix the scipi.io wavfile.write method?
 	# For whatver reason, I can't get Scipy's wav io to work with
@@ -225,6 +225,10 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase):
 	format = Format('wav')
 	f = Sndfile(filter, 'w', format, 1, Fs)
 	f.write_frames(norm(np.real(equalizer)))
+	f.close
+	
+	f = Sndfile('eqresp.wav', 'w', format, 1, Fs)
+	f.write_frames(norm(eqresp))
 	f.close
 	
 	print '\nOutput filter length =', len(equalizer), 'taps'
