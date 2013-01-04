@@ -33,9 +33,11 @@ Required Python dependencies:
     1) Python 2.7
     2) Scientific Python: SciPy (v0.11+), Numpy, & Matplotlib
     3) Scikits.audiolab
-    4) libsndfile
+    4) libsndfile, setuptools
 
-This is a command line tool.
+This is a command line tool. I will be working to minimuze the number of dependencies in 
+future releases. One may successfully install PORC on Windows, although some extra legwork is 
+required to get all the dependencies and environmental variables set (email me for help).
 
 Measurement
 ===========

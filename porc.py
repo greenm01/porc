@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -OO
 #
 # Python Open Room Correction (PORC)
 # Copyright (c) 2012 Mason A. Green
