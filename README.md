@@ -51,7 +51,7 @@ Usage
 
 porc.py [-h] [--mixed] [-t FILE] [-n NTAPS] input_file output_file
 
-    python porc.py -t tact30f.txt -n 6148 l48.wav leq48.wav
+    python porc.py -t tact30f.txt -n 6144 l48.wav leq48.wav
 
 Use the -h flag for help!
 
@@ -81,7 +81,7 @@ easily do this with Audacity or REQ.
 
 Example:
 
-	python porc.py --mixed -t tact30f.txt -n 6148 l48.wav leq48.wav
+	python porc.py --mixed -t tact30f.txt -n 6144 l48.wav leq48.wav
 	
 Have some patience with this method. The convolution takes a few CPU cycles.
 
