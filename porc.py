@@ -100,182 +100,186 @@ def mad(a, c=Gaussian.ppf(3/4.), axis=0):  # c \approx .6745
     
 def roomcomp(impresp, filter, target, ntaps, mixed_phase):
 
-	# Read impulse response
-	Fs, data = wavfile.read(impresp)
-	data = norm(np.hstack(data))
-	
-	print "Sample rate = ", Fs
+  # Read impulse response
+  Fs, data = wavfile.read(impresp)
+  data = norm(np.hstack(data))
 
-	###
-	## Logarithmic pole positioning
-	###
+  print "Sample rate = ", Fs
 
-	fplog = np.hstack((sp.logspace(sp.log10(20.), sp.log10(200.), 14.), sp.logspace(sp.log10(250.), 
-					   sp.log10(20000.), 13.))) 
-	plog = freqpoles(fplog, Fs)
+  ###
+  ## Logarithmic pole positioning
+  ###
 
-	###
-	## Preparing data
-	###
+  fplog = np.hstack((sp.logspace(sp.log10(20.), sp.log10(200.), 14.), sp.logspace(sp.log10(250.), 
+             sp.log10(20000.), 13.))) 
+  plog = freqpoles(fplog, Fs)
 
-	# making the measured response minumum-phase
-	cp, minresp = rceps(data)
+  ###
+  ## Preparing data
+  ###
 
-	# Impulse response
-	imp = np.zeros(len(data), dtype=np.float64)
-	imp[0]=1.0
+  # making the measured response minumum-phase
+  cp, minresp = rceps(data)
 
-	# Target
-	outf = []
-	db = []
+  # Impulse response
+  imp = np.zeros(len(data), dtype=np.float64)
+  imp[0]=1.0
 
-	if target is 'flat':
-		
-		# Make the target output a bandpass filter
-		Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
-		outf = sig.lfilter(Bf, Af, imp) 
-		
-	else:
-		
-		# load target file
-		t = np.loadtxt(target)
-		frq = t[:,0]; pwr = t[:,1]
-		
-		# calculate the FIR filter via windowing method
-		fir = sig.firwin2(501, frq, np.power(10, pwr/20.0), nyq = frq[-1])	
-		# Minimum phase, zero padding	
-		cp, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
-			
-	###
-	## Filter design
-	###
+  # Target
+  outf = []
+  db = []
 
-	#Parallel filter design
-	(Bm, Am, FIR) = parfiltid(minresp, outf, plog)
+  if target is 'flat':
+    
+    # Make the target output a bandpass filter
+    Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
+    outf = sig.lfilter(Bf, Af, imp) 
+    
+  else:
+    
+    # load target file
+    t = np.loadtxt(target)
+    frq = t[:,0]; pwr = t[:,1]
+    
+    # calculate the FIR filter via windowing method
+    fir = sig.firwin2(501, frq, np.power(10, pwr/20.0), nyq = frq[-1])	
+    # Minimum phase, zero padding	
+    cp, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
+      
+  ###
+  ## Filter design
+  ###
 
-	# equalized loudspeaker response - filtering the 
-	# measured transfer function by the parallel filter
-	equalizedresp = parfilt(Bm, Am, FIR, data)
+  #Parallel filter design
+  (Bm, Am, FIR) = parfiltid(minresp, outf, plog)
 
-	# Equalizer impulse response - filtering a unit pulse
-	equalizer = norm(parfilt(Bm, Am, FIR, imp))
-	
-	# Windowing with a half hanning window in time domain
-	han = np.hanning(ntaps*2)[-ntaps:]
-	equalizer = han * equalizer[:ntaps]
+  # equalized loudspeaker response - filtering the 
+  # measured transfer function by the parallel filter
+  equalizedresp = parfilt(Bm, Am, FIR, data)
 
-	###
-	## Mixed-phase compensation
-	## Based on the paper "Mixed Time-Frequency approach for Multipoint
-	## Room Rosponse Equalization," by A. Carini et al.
-	## To use this feature, your Room Impulse Response should have all
-	## the leading zeros removed.
-	###
-	if mixed_phase is True:
-		
-		# prototype function
-		hp = norm(np.real(equalizedresp))
-		
-		# time integration of the human ear is ~24ms
-		# See "Measuring the mixing time in auditoria," by Defrance & Polack
-		hop_size = 0.024
-		samples = hop_size * Fs
-		
-		bins = np.int(np.ceil(len(hp) / samples))
-		
-		tmix = 0
-		
-		# Kurtosis method
-		for b in range(bins):
-			start = np.int(b * samples)
-			end = np.int((b+1) * samples)
-			k = kurtosis(hp[start:end])
-			if k <= 0:
-				tmix = b * hop_size
-				break
-		
-		print "mixing time(secs) = ", tmix
-		
-		# truncate the prototype function
-		taps = np.int(tmix*Fs)
-		# Time reverse the array
-		h = hp[:taps][::-1]
-		# create all pass filter
-		phase = np.unwrap(np.angle(h))
-		H = np.exp(1j*phase)
-		# convert from db to linear
-		mixed = np.power(10, np.real(H)/20.0)
-		# create filter's impulse response
-		mixed = np.real(ifft(mixed))
-		
-		# convolve and window to desired length
-		equalizer = conv(equalizer, mixed)
-		equalizer = han * equalizer[:ntaps]
-		
-		#data = han * data[:ntaps]
-		#eqresp = np.real(conv(equalizer, data))
-		
-	# TODO: Fix the scipi.io wavfile.write method?
-	# For whatver reason, I can't get Scipy's wav io to work with
-	# sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
-	# Audiolab works well below, but it's an extra set of dependencies
-	#wavfile.write(filter, Fs, equalizer.astype(np.float16))
-	
-	# Write data, convert to 16 bits
-	format = Format('wav')
-	f = Sndfile(filter, 'w', format, 1, Fs)
-	f.write_frames(norm(np.real(equalizer)))
-	f.close
-	
-	#f = Sndfile('eqresp.wav', 'w', format, 1, Fs)
-	#f.write_frames(norm(eqresp))
-	#f.close
-	
-	print '\nOutput filter length =', len(equalizer), 'taps'
-	print 'Output filter written to ' + filter
+  # Equalizer impulse response - filtering a unit pulse
+  equalizer = norm(parfilt(Bm, Am, FIR, imp))
 
-	print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-	print "or to merge left and right channels into a stereo .wav"
-	print "\nExample: sox leq48.wav -t f32 leq48.bin"
-	print "         sox -M le148.wav req48.wav output.wav\n"
+  # Windowing with a half hanning window in time domain
+  han = np.hanning(ntaps*2)[-ntaps:]
+  equalizer = han * equalizer[:ntaps]
 
-	###
-	## Plots
-	###
+  ###
+  ## Mixed-phase compensation
+  ## Based on the paper "Mixed Time-Frequency approach for Multipoint
+  ## Room Rosponse Equalization," by A. Carini et al.
+  ## To use this feature, your Room Impulse Response should have all
+  ## the leading zeros removed.
+  ###
+  if mixed_phase is True:
+    
+    # prototype function
+    hp = norm(np.real(equalizedresp))
 
-	data *= 500
-	# original loudspeaker-room response
-	tfplot(data, Fs, avg = 'abs')
-	# 1/3 Octave smoothed
-	tfplots(data, Fs, 'r')
+    # time integration of the human ear is ~24ms
+    # See "Measuring the mixing time in auditoria," by Defrance & Polack
+    hop_size = 0.024
+    samples = hop_size * Fs
 
-	#tfplot(mixed, Fs, 'r')
+    bins = np.int(np.ceil(len(hp) / samples))
 
-	# equalizer transfer function
-	tfplot(0.75*equalizer, Fs, 'g')
-	# indicating pole frequencies
-	plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
+    tmix = 0
 
-	# equalized loudspeaker-room response
-	tfplot(equalizedresp*0.01, Fs, avg = 'abs')
-	# 1/3 Octave smoothed
-	tfplots(equalizedresp*0.01, Fs, 'r')
+    # Kurtosis method
+    for b in range(bins):
+      start = np.int(b * samples)
+      end = np.int((b+1) * samples)
+      k = kurtosis(hp[start:end])
+      if k <= 0:
+        tmix = b * hop_size
+        break
 
-	# Add labels
-	# May need to reposition these based on input data
-	plt.text(325,30,'Unequalized loudspeaker-room response')
-	plt.text(100,-15,'Equalizer transfer function')
-	plt.text(100,-21,'(Black lines: pole locations)')
-	plt.text(130,-70,'Equalized loudspeaker-room response')
+    # truncate the prototype function
+    taps = np.int(tmix*Fs)
 
-	a = plt.gca()
-	a.set_xlim([20, 20000])
-	a.set_ylim([-80, 80])
-	plt.ylabel('Amplitude (dB)', color='b')
-	plt.xlabel('Frequency (Hz)')
-	plt.grid()
-	plt.legend()
-	plt.show()
+    print "\nmixing time(secs) = ", tmix, "; taps = ", taps
+    
+    if taps > 0:
+      # Time reverse the array
+      h = hp[:taps][::-1]
+      # create all pass filter
+      phase = np.unwrap(np.angle(h))
+      H = np.exp(1j*phase)
+      # convert from db to linear
+      mixed = np.power(10, np.real(H)/20.0)
+      # create filter's impulse response
+      mixed = np.real(ifft(mixed))
+      
+      # convolve and window to desired length
+      equalizer = conv(equalizer, mixed)
+      equalizer = han * equalizer[:ntaps]
+      
+      #data = han * data[:ntaps]
+      #eqresp = np.real(conv(equalizer, data))
+    else:
+      print "zero taps; skipping mixed-phase computation"
+      
+  # TODO: Fix the scipi.io wavfile.write method?
+  # For whatver reason, I can't get Scipy's wav io to work with
+  # sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
+  # Audiolab works well below, but it's an extra set of dependencies
+  #wavfile.write(filter, Fs, equalizer.astype(np.float16))
+
+  # Write data, convert to 16 bits
+  format = Format('wav')
+  f = Sndfile(filter, 'w', format, 1, Fs)
+  f.write_frames(norm(np.real(equalizer)))
+  f.close
+
+  #f = Sndfile('eqresp.wav', 'w', format, 1, Fs)
+  #f.write_frames(norm(eqresp))
+  #f.close
+
+  print '\nOutput filter length =', len(equalizer), 'taps'
+  print 'Output filter written to ' + filter
+
+  print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
+  print "or to merge left and right channels into a stereo .wav"
+  print "\nExample: sox leq48.wav -t f32 leq48.bin"
+  print "         sox -M le148.wav req48.wav output.wav\n"
+
+  ###
+  ## Plots
+  ###
+
+  data *= 500
+  # original loudspeaker-room response
+  tfplot(data, Fs, avg = 'abs')
+  # 1/3 Octave smoothed
+  tfplots(data, Fs, 'r')
+
+  #tfplot(mixed, Fs, 'r')
+
+  # equalizer transfer function
+  tfplot(0.75*equalizer, Fs, 'g')
+  # indicating pole frequencies
+  plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
+
+  # equalized loudspeaker-room response
+  tfplot(equalizedresp*0.01, Fs, avg = 'abs')
+  # 1/3 Octave smoothed
+  tfplots(equalizedresp*0.01, Fs, 'r')
+
+  # Add labels
+  # May need to reposition these based on input data
+  plt.text(325,30,'Unequalized loudspeaker-room response')
+  plt.text(100,-15,'Equalizer transfer function')
+  plt.text(100,-21,'(Black lines: pole locations)')
+  plt.text(130,-70,'Equalized loudspeaker-room response')
+
+  a = plt.gca()
+  a.set_xlim([20, 20000])
+  a.set_ylim([-80, 80])
+  plt.ylabel('Amplitude (dB)', color='b')
+  plt.xlabel('Frequency (Hz)')
+  plt.grid()
+  plt.legend()
+  plt.show()
 
 def main():
     
