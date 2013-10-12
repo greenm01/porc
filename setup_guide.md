@@ -12,7 +12,7 @@ and instructions on http://docs.continuum.io/anaconda/install.html for the insta
 
 ##Install libsndfile - Windows
 
-
+Use exe available at libsndfile web page - http://www.mega-nerd.com/libsndfile/
 
 ##Install libsndfile - Linux
 
