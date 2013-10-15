@@ -42,6 +42,9 @@
 # Python libs
 import sys
 import textwrap
+import wave
+from contextlib import closing
+import struct
 
 # Scipy, Numpy, and matplotlibs
 import numpy as np
@@ -55,9 +58,6 @@ from scipy.signal import convolve as conv
 from scipy.stats import kurtosis, nanstd
 from scipy.stats import norm as Gaussian
 import matplotlib.pyplot as plt
-from scikits.audiolab import Format, Sndfile
-
-import sys
 
 # PORC source files
 from parfiltid import parfiltid
@@ -219,21 +219,8 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase):
     else:
       print "zero taps; skipping mixed-phase computation"
       
-  # TODO: Fix the scipi.io wavfile.write method?
-  # For whatver reason, I can't get Scipy's wav io to work with
-  # sox (e.g. sox filter.wav -t f32 filter.bin) and OpenDRC's file import.
-  # Audiolab works well below, but it's an extra set of dependencies
-  #wavfile.write(filter, Fs, equalizer.astype(np.float16))
-
-  # Write data, convert to 16 bits
-  format = Format('wav')
-  f = Sndfile(filter, 'w', format, 1, Fs)
-  f.write_frames(norm(np.real(equalizer)))
-  f.close
-
-  #f = Sndfile('eqresp.wav', 'w', format, 1, Fs)
-  #f.write_frames(norm(eqresp))
-  #f.close
+  # Write data
+  wavwrite_24(filter, Fs, equalizer)
 
   print '\nOutput filter length =', len(equalizer), 'taps'
   print 'Output filter written to ' + filter
@@ -281,6 +268,15 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase):
   plt.legend()
   plt.show()
 
+def wavwrite_24(fname, fs, data):
+    data_as_bytes = (struct.pack('<i', int(samp*(2**23-1))) for samp in data)
+    with closing(wave.open(fname, 'wb')) as wavwriter:
+        wavwriter.setnchannels(1)
+        wavwriter.setsampwidth(3)
+        wavwriter.setframerate(fs)
+        for data_bytes in data_as_bytes:
+            wavwriter.writeframes(data_bytes[0:3])
+			
 def main():
     
 	print
@@ -321,5 +317,3 @@ def main():
 
 if __name__=="__main__":
     main()  
-    
-
