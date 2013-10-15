@@ -35,7 +35,6 @@ Required Python dependencies:
 
 The easiest install method on Windows is simply to install Anaconda
 https://store.continuum.io/cshop/anaconda/
-
 Measurement
 ===========
 
