@@ -31,19 +31,17 @@ Mixed-Phase Compensation references:
 Required Python dependencies:
 
     1) Python 2.7
-    2) Scientific Python: SciPy (v0.11+), Numpy, & Matplotlib
-    3) Scikits.audiolab, setuptools, libsndfile
+    2) Scientific Python: SciPy, Numpy, & Matplotlib
 
-This is a command line tool. I will be working to minimuze the number of dependencies in 
-future releases. One may successfully install PORC on Windows, although some extra legwork is 
-required to get all the dependencies and environmental variables set (email me for help).
+The easiest install method on Windows is simply to install Anaconda
+https://store.continuum.io/cshop/anaconda/
 
 Measurement
 ===========
 
 One needs to measure the log-frequency impulse response of your speakers with a 
 calibrated Electret Measurement Microphone, e.g. Dayton Audio EMM-6. Software 
-such as Room EQ Wizard (REQ) may be used for this purpose:
+such as Room EQ Wizard (REQ), Holm Impulse, or Arta may be used for this purpose:
 http://www.hometheatershack.com/roomeq/
 
 Usage
@@ -109,9 +107,9 @@ Use sox to convert output .wav to raw 32 bit IEEE floating point mono for the le
 TODO
 ====
 
-	Implement algo to automatically remove leading silence from RIR.
+	Implement algo to automatically remove leading silence (zeros) from RIR.
 	Port this code to C 
-    Update this page with better documentation!
+        Update this page with better documentation!
 
 Contact
 =======
