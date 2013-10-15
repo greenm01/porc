@@ -33,8 +33,8 @@ Required Python dependencies:
     1) Python 2.7
     2) Scientific Python: SciPy, Numpy, & Matplotlib
 
-The easiest install method on Windows is simply to install Anaconda
-https://store.continuum.io/cshop/anaconda/
+The easiest install method on Windows is simply to install continuum.io's Anaconda package.
+
 Measurement
 ===========
 
