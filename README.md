@@ -46,9 +46,9 @@ http://www.hometheatershack.com/roomeq/
 Usage
 =====
 
-porc.py [-h] [--mixed] [-t FILE] [-n NTAPS] input_file output_file
+porc.py [-h] [--mixed] [-t FILE] [-n NTAPS] [-o OPFORMAT] input_file output_file
 
-    python porc.py -t tact30f.txt -n 6144 l48.wav leq48.wav
+    python porc.py -t tact30f.txt -n -o bin 6144 l48.wav leq48.bin
 
 Use the -h flag for help!
 
@@ -78,7 +78,7 @@ easily do this with Audacity or REQ.
 
 Example:
 
-	python porc.py --mixed -t tact30f.txt -n 6144 l48.wav leq48.wav
+	python porc.py --mixed -t tact30f.txt -n -o bin 6144 l48.wav leq48.wav
 	
 Have some patience with this method. The convolution takes a few CPU cycles.
 
@@ -98,10 +98,8 @@ You may need to merge left and right channels into a single stereo .wav
 OpenDRC Convolution
 ===================
 
-Use sox to convert output .wav to raw 32 bit IEEE floating point mono for the left & right channels
+Use -o bin flag to set binary 32bit IEEE floating point mono file format output for OpenDRC.
 
-    sox leq48.wav -t f32 leq48.bin
-    sox req48.wav -t f32 req48.bin
 
 TODO
 ====
