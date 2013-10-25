@@ -98,7 +98,7 @@ def mad(a, c=Gaussian.ppf(3/4.), axis=0):  # c \approx .6745
     a = np.asarray(a)
     return np.median((np.fabs(a))/c, axis=axis)
     
-def roomcomp(impresp, filter, target, ntaps, mixed_phase):
+def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat):
 
   # Read impulse response
   Fs, data = wavfile.read(impresp)
@@ -218,12 +218,23 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase):
       #eqresp = np.real(conv(equalizer, data))
     else:
       print "zero taps; skipping mixed-phase computation"
-      
+  if opformat == 'wav':      
   # Write data
-  wavwrite_24(filter, Fs, equalizer)
+    wavwrite_24(filter, Fs, equalizer)
 
-  print '\nOutput filter length =', len(equalizer), 'taps'
-  print 'Output filter written to ' + filter
+    print '\nOutput filter length =', len(equalizer), 'taps'
+    print 'Output filter written to ' + filter
+
+  elif opformat == 'bin':
+    # direct output to bin avoids float64->pcm16->float32 conversion by going direct 
+    #float64->float32
+    f = open(filter, 'w')
+    norm(np.real(equalizer)).astype('float32').tofile(f)
+    f.close()
+    print '\nOutput filter length =', len(equalizer), 'taps'
+    print 'Output filter written to ' + filter
+  else:
+    print 'Output format not recognized, no file generated.'
 
   print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
   print "or to merge left and right channels into a stereo .wav"
@@ -309,11 +320,13 @@ def main():
 	parser.add_argument("-n", dest="ntaps", default = 6144,
 					  help="filter length, in taps. Default = len(input)", type=int)
 	parser.add_argument('--mixed', action='store_true', default = False,
-					  help="implement mixed-phase compensation. see README for details")                 
+					  help="implement mixed-phase compensation. see README for details") 
+	parser.add_argument("-o", dest="opformat", default = 'bin',
+					  help="Output file type, default bin optional wav", type=str)                     
 
 	args = parser.parse_args()
 
-	roomcomp(args.impresp, args.filter, args.target, args.ntaps, args.mixed)
+	roomcomp(args.impresp, args.filter, args.target, args.ntaps, args.mixed, args.opformat)
 
 if __name__=="__main__":
     main()  
