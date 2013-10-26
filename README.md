@@ -48,7 +48,7 @@ Usage
 
 porc.py [-h] [--mixed] [-t FILE] [-n NTAPS] [-o OPFORMAT] input_file output_file
 
-    python porc.py -t tact30f.txt -n -o bin 6144 l48.wav leq48.bin
+    python porc.py -t tact30f.txt -n 6144 -o bin l48.wav leq48.bin
 
 Use the -h flag for help!
 
