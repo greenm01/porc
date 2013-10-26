@@ -78,7 +78,7 @@ easily do this with Audacity or REQ.
 
 Example:
 
-	python porc.py --mixed -t tact30f.txt -n -o bin 6144 l48.wav leq48.wav
+	python porc.py --mixed -t tact30f.txt -n 6144 -o bin l48.wav leq48.wav
 	
 Have some patience with this method. The convolution takes a few CPU cycles.
 
