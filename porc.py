@@ -228,7 +228,7 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat):
   elif opformat == 'bin':
     # direct output to bin avoids float64->pcm16->float32 conversion by going direct 
     #float64->float32
-    f = open(filter, 'w')
+    f = open(filter, 'wb')
     norm(np.real(equalizer)).astype('float32').tofile(f)
     f.close()
     print '\nOutput filter length =', len(equalizer), 'taps'
