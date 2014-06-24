@@ -98,13 +98,29 @@ def mad(a, c=Gaussian.ppf(3/4.), axis=0):  # c \approx .6745
     a = np.asarray(a)
     return np.median((np.fabs(a))/c, axis=axis)
     
-def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat):
+def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthresh, noplot):
 
+  print "Loading impulse response"
+  
   # Read impulse response
   Fs, data = wavfile.read(impresp)
   data = norm(np.hstack(data))
 
-  print "Sample rate = ", Fs
+
+  if trim:
+    print "Removing leading silence"
+    for spos,sval in enumerate(data):
+        if abs(sval)>nsthresh:
+            lzs=max(spos-1,0)
+            ld =len(data)
+            print 'Impulse starts at position ', spos, '/', len(data)
+            print 'Trimming ', float(lzs)/float(Fs), ' seconds of silence'
+            data=data[lzs:len(data)] #remove everything before sample at spos
+            break
+		  
+  print "\nSample rate = ", Fs
+  
+  print "\nGenerating correction filter"
 
   ###
   ## Logarithmic pole positioning
@@ -218,13 +234,27 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat):
       #eqresp = np.real(conv(equalizer, data))
     else:
       print "zero taps; skipping mixed-phase computation"
-  if opformat == 'wav':      
+  if opformat in ('wav', 'wav24'):      
   # Write data
-    wavwrite_24(filter, Fs, equalizer)
-
-    print '\nOutput filter length =', len(equalizer), 'taps'
+    wavwrite_24(filter, Fs, norm(np.real(equalizer)))
+    print '\nOutput format is wav24'
+    print 'Output filter length =', len(equalizer), 'taps'
     print 'Output filter written to ' + filter
+	
+    print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
+    print "or to merge left and right channels into a stereo .wav"
+    print "\nExample: sox leq48.wav -t f32 leq48.bin"
+    print "         sox -M le148.wav req48.wav output.wav\n"
 
+  elif opformat == 'wav32':
+    wavwrite_32(filter, Fs, norm(np.real(equalizer)))
+    print '\nOutput format is wav32'
+    print 'Output filter length =', len(equalizer), 'taps'
+    print 'Output filter written to ' + filter
+    print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
+    print "or to merge left and right channels into a stereo .wav"
+    print "\nExample: sox leq48.wav -t f32 leq48.bin"
+    print "         sox -M le148.wav req48.wav output.wav\n"
   elif opformat == 'bin':
     # direct output to bin avoids float64->pcm16->float32 conversion by going direct 
     #float64->float32
@@ -236,48 +266,44 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat):
   else:
     print 'Output format not recognized, no file generated.'
 
-  print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-  print "or to merge left and right channels into a stereo .wav"
-  print "\nExample: sox leq48.wav -t f32 leq48.bin"
-  print "         sox -M le148.wav req48.wav output.wav\n"
 
   ###
   ## Plots
   ###
+  if not noplot:
+    data *= 500
+    # original loudspeaker-room response
+    tfplot(data, Fs, avg = 'abs')
+    # 1/3 Octave smoothed
+    tfplots(data, Fs, 'r')
 
-  data *= 500
-  # original loudspeaker-room response
-  tfplot(data, Fs, avg = 'abs')
-  # 1/3 Octave smoothed
-  tfplots(data, Fs, 'r')
+    #tfplot(mixed, Fs, 'r')
 
-  #tfplot(mixed, Fs, 'r')
+    # equalizer transfer function
+    tfplot(0.75*equalizer, Fs, 'g')
+    # indicating pole frequencies
+    plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
 
-  # equalizer transfer function
-  tfplot(0.75*equalizer, Fs, 'g')
-  # indicating pole frequencies
-  plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
+    # equalized loudspeaker-room response
+    tfplot(equalizedresp*0.01, Fs, avg = 'abs')
+    # 1/3 Octave smoothed
+    tfplots(equalizedresp*0.01, Fs, 'r')
 
-  # equalized loudspeaker-room response
-  tfplot(equalizedresp*0.01, Fs, avg = 'abs')
-  # 1/3 Octave smoothed
-  tfplots(equalizedresp*0.01, Fs, 'r')
+    # Add labels
+    # May need to reposition these based on input data
+    plt.text(325,30,'Unequalized loudspeaker-room response')
+    plt.text(100,-15,'Equalizer transfer function')
+    plt.text(100,-21,'(Black lines: pole locations)')
+    plt.text(130,-70,'Equalized loudspeaker-room response')
 
-  # Add labels
-  # May need to reposition these based on input data
-  plt.text(325,30,'Unequalized loudspeaker-room response')
-  plt.text(100,-15,'Equalizer transfer function')
-  plt.text(100,-21,'(Black lines: pole locations)')
-  plt.text(130,-70,'Equalized loudspeaker-room response')
-
-  a = plt.gca()
-  a.set_xlim([20, 20000])
-  a.set_ylim([-80, 80])
-  plt.ylabel('Amplitude (dB)', color='b')
-  plt.xlabel('Frequency (Hz)')
-  plt.grid()
-  plt.legend()
-  plt.show()
+    a = plt.gca()
+    a.set_xlim([20, 20000])
+    a.set_ylim([-80, 80])
+    plt.ylabel('Amplitude (dB)', color='b')
+    plt.xlabel('Frequency (Hz)')
+    plt.grid()
+    plt.legend()
+    plt.show()
 
 def wavwrite_24(fname, fs, data):
     data_as_bytes = (struct.pack('<i', int(samp*(2**23-1))) for samp in data)
@@ -287,6 +313,15 @@ def wavwrite_24(fname, fs, data):
         wavwriter.setframerate(fs)
         for data_bytes in data_as_bytes:
             wavwriter.writeframes(data_bytes[0:3])
+            
+def wavwrite_32(fname, fs, data):
+    data_as_bytes = (struct.pack('<i', int(samp*(2**31-1))) for samp in data)
+    with closing(wave.open(fname, 'wb')) as wavwriter:
+        wavwriter.setnchannels(1)
+        wavwriter.setsampwidth(4)
+        wavwriter.setframerate(fs)
+        for data_bytes in data_as_bytes:
+            wavwriter.writeframes(data_bytes[0:4])
 			
 def main():
     
@@ -320,13 +355,19 @@ def main():
 	parser.add_argument("-n", dest="ntaps", default = 6144,
 					  help="filter length, in taps. Default = len(input)", type=int)
 	parser.add_argument('--mixed', action='store_true', default = False,
-					  help="implement mixed-phase compensation. see README for details") 
+					  help="Implement mixed-phase compensation. see README for details") 
 	parser.add_argument("-o", dest="opformat", default = 'bin',
-					  help="Output file type, default bin optional wav", type=str)                     
+					help="Output file type, default bin optional wav", type=str)   
+	parser.add_argument("-s", dest="nsthresh", default = 0.005,
+					help="Normalized silence threshold. Default = 0.05", type=float)                    
+	parser.add_argument('--trim', action='store_true', default = False,
+					help="Trim leading silence")
+	parser.add_argument('--noplot', action='store_true', default = False,
+					help="Do not polt the filter") 	 					  
 
 	args = parser.parse_args()
 
-	roomcomp(args.impresp, args.filter, args.target, args.ntaps, args.mixed, args.opformat)
+	roomcomp(args.impresp, args.filter, args.target, args.ntaps, args.mixed, args.opformat, args.trim, args.nsthresh, args.noplot)
 
 if __name__=="__main__":
     main()  
