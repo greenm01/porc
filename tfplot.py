@@ -31,8 +31,8 @@
 #   FRACT defines the fractional-octave smoothing (default is 3, meaning third-octave).
 #   The length of the smoothing hanning window is the double compared to the distance
 #   defined by FRACT.
-#   The sampling frequency is set by FS (default is 44.1 kHz) and the plotting color is set by the COLOR variable
-#   (default is 'b').
+#   The sampling frequency is set by FS (default is 44.1 kHz) and the plotting color is 
+#   set by the COLOR variable (default is 'b').
 #
 #   TFPLOT(IMPRESP, COLOR, FS, OCTBIN, AVG)
 #   Logarithmic transfer function plot from impluse response IMPRESP.
