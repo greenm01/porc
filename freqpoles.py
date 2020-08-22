@@ -19,7 +19,7 @@ def freqpoles(fr, Fs = 44100, Q = None):
 	# discrete pole frequencies
 	wp = 2 * np.pi * fr / Fs 
 
-	dwp = []
+	dwp = np.empty(wp.shape)
 	if Q is None:
 		pnum = wp.size
 		dwp = np.zeros(pnum)

@@ -134,7 +134,7 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
   ###
 
   # making the measured response minumum-phase
-  cp, minresp = rceps(data)
+  _, minresp = rceps(data)
 
   # Impulse response
   imp = np.zeros(len(data), dtype=np.float64)
@@ -142,7 +142,6 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
 
   # Target
   outf = []
-  db = []
 
   if target == 'flat':
     
@@ -159,7 +158,7 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
     # calculate the FIR filter via windowing method
     fir = sig.firwin2(501, frq, np.power(10, pwr/20.0), nyq = frq[-1])	
     # Minimum phase, zero padding	
-    cp, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
+    _, outf = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
       
   ###
   ## Filter design

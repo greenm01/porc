@@ -85,7 +85,6 @@ def tfplots(data, Fs = 44100, color = 'b', fract=3):
 	tf = fft(data*endwin, FFTSIZE)
 
 	magn = np.abs(tf[:FFTSIZE/2])
-	compamp = tf[:FFTSIZE/2]
 
 	# creating 100th octave resolution log. spaced data from the lin. spaced FFT data
 	logmagn = np.empty(LOGN)
@@ -139,7 +138,7 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 
 		#finding the start and end positions of the logaritmic bin
 		start = np.round(logscale[k]/np.sqrt(logfact)/fstep)
-		start = np.maximum(start, 1);
+		start = np.maximum(start, 1)
 		start = np.minimum(start, FFTSIZE/2)
 		stop = np.round(logscale[k]*np.sqrt(logfact)/fstep)-1
 		stop = np.maximum(stop, start)
@@ -160,7 +159,7 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 def debug_log_plot(x, y):
 	fig = plt.figure()
 	plt.title("Digital filter frequency response")
-	ax = fig.add_subplot(111)
+	fig.add_subplot(111)
 	plt.semilogx(x, y, 'b')
 	plt.ylabel('Amplitude (power)', color='b')
 	plt.xlabel('Frequency (rad/sample)')
