@@ -57,6 +57,8 @@
 #
 #   C. Balazs Bank, Helsinki University of Technology, 2007.
 
+# pylint: disable=invalid-name
+
 import numpy as np
 import scipy as sp
 import scipy.signal as sig

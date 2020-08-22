@@ -74,8 +74,10 @@ from freqpoles import freqpoles
 import warnings
 warnings.filterwarnings('ignore')
 
+# pylint: disable=invalid-name
 
 # MiniDSP's OpenDRC box likes 6144 taps
+
 
 def rceps(x):
     y = np.real(ifft(np.log(np.absolute(fft(x)))))

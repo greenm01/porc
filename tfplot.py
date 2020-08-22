@@ -31,7 +31,7 @@
 #   FRACT defines the fractional-octave smoothing (default is 3, meaning third-octave).
 #   The length of the smoothing hanning window is the double compared to the distance
 #   defined by FRACT.
-#   The sampling frequency is set by FS (default is 44.1 kHz) and the plotting color is 
+#   The sampling frequency is set by FS (default is 44.1 kHz) and the plotting color is
 #   set by the COLOR variable (default is 'b').
 #
 #   TFPLOT(IMPRESP, COLOR, FS, OCTBIN, AVG)
@@ -49,6 +49,8 @@
 #   magnitude (i.e., this is the default).
 #
 #   C. Balazs Bank, 2006-2007.
+
+# pylint: disable=invalid-name
 
 import numpy as np
 import scipy as sp
