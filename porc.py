@@ -81,8 +81,10 @@ def rceps(x):
     if n % 2 == 1:
         ym = np.hstack((y[0], 2 * y[1:n / 2], np.zeros(n / 2 - 1)))
     else:
-        ym = np.hstack((y[0], 2 * y[1:n / 2], y[n / 2 + 1], np.zeros(n
-                                                                     / 2 - 1)))
+        ym = np.hstack(
+            (y[0], 2 * y[1:n / 2],
+             y[n / 2 + 1],
+             np.zeros(n / 2 - 1)))
     ym = np.real(ifft(np.exp(fft(ym))))
     return (y, ym)
 
