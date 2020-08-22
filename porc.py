@@ -43,36 +43,32 @@
 
 # Python libs
 
-import sys
+import struct
 import textwrap
 import wave
+import warnings
 from contextlib import closing
-import struct
+
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.signal as sig
+from scipy.stats import norm as Gaussian
+from scipy.stats import kurtosis
+from scipy.signal import convolve as conv
+from scipy.io import wavfile
+from scipy.fftpack import ifft, fft
+from freqpoles import freqpoles
+from tfplot import tfplot, tfplots
+from parfiltid import parfiltid
+
+# Ignore warnings
+warnings.filterwarnings('ignore')
 
 # Scipy, Numpy, and matplotlibs
 
-import numpy as np
-import scipy as sp
-import scipy.io as sio
-import scipy.signal as sig
-from scipy.fftpack import ifft, fft
-from scipy.interpolate import pchip
-from scipy.io import wavfile
-from scipy.signal import convolve as conv
-from scipy.stats import kurtosis
-from scipy.stats import norm as Gaussian
-import matplotlib.pyplot as plt
 
 # PORC source files
 
-from parfiltid import parfiltid
-from tfplot import tfplot, tfplots, debug_log_plot
-from freqpoles import freqpoles
-
-# Ignore warnings
-
-import warnings
-warnings.filterwarnings('ignore')
 
 # pylint: disable=invalid-name
 
