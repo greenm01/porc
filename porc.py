@@ -112,7 +112,6 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
     for spos,sval in enumerate(data):
         if abs(sval)>nsthresh:
             lzs=max(spos-1,0)
-            ld =len(data)
             print('Impulse starts at position ', spos, '/', len(data))
             print('Trimming ', float(lzs)/float(Fs), ' seconds of silence')
             data=data[lzs:len(data)] #remove everything before sample at spos
