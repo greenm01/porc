@@ -60,7 +60,6 @@
 # pylint: disable=invalid-name
 
 import numpy as np
-import scipy as sp
 import scipy.signal as sig
 
 

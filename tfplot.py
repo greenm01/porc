@@ -53,8 +53,6 @@
 # pylint: disable=invalid-name
 
 import numpy as np
-import scipy as sp
-import scipy.signal as sig
 import matplotlib.pyplot as plt
 from numpy.fft import fft, ifft
 
