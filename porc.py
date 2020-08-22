@@ -70,13 +70,13 @@ import warnings; warnings.filterwarnings('ignore')
 # MiniDSP's OpenDRC box likes 6144 taps
 
 def rceps(x): 
-	y = sp.real(ifft(sp.log(sp.absolute(fft(x)))))
+	y = np.real(ifft(np.log(np.absolute(fft(x)))))
 	n = len(x) 
 	if (n%2) == 1:
 		ym = np.hstack((y[0], 2*y[1:n/2], np.zeros(n/2-1)))
 	else:
 		ym = np.hstack((y[0], 2*y[1:n/2], y[n/2+1], np.zeros(n/2-1)))
-	ym = sp.real(ifft(sp.exp(fft(ym)))) 
+	ym = np.real(ifft(np.exp(fft(ym)))) 
 	return (y, ym)
     
 def parfilt(Bm, Am, FIR, x):
@@ -100,7 +100,7 @@ def mad(a, c=Gaussian.ppf(3/4.), axis=0):  # c \approx .6745
     
 def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthresh, noplot):
 
-  print "Loading impulse response"
+  print("Loading impulse response")
   
   # Read impulse response
   Fs, data = wavfile.read(impresp)
@@ -108,26 +108,26 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
 
 
   if trim:
-    print "Removing leading silence"
+    print("Removing leading silence")
     for spos,sval in enumerate(data):
         if abs(sval)>nsthresh:
             lzs=max(spos-1,0)
             ld =len(data)
-            print 'Impulse starts at position ', spos, '/', len(data)
-            print 'Trimming ', float(lzs)/float(Fs), ' seconds of silence'
+            print('Impulse starts at position ', spos, '/', len(data))
+            print('Trimming ', float(lzs)/float(Fs), ' seconds of silence')
             data=data[lzs:len(data)] #remove everything before sample at spos
             break
 		  
-  print "\nSample rate = ", Fs
+  print("\nSample rate = ", Fs)
   
-  print "\nGenerating correction filter"
+  print("\nGenerating correction filter")
 
   ###
   ## Logarithmic pole positioning
   ###
 
-  fplog = np.hstack((sp.logspace(sp.log10(20.), sp.log10(200.), 14.), sp.logspace(sp.log10(250.), 
-             sp.log10(20000.), 13.))) 
+  fplog = np.hstack((np.logspace(np.log10(20.), np.log10(200.), 14.), np.logspace(np.log10(250.), 
+             np.log10(20000.), 13.))) 
   plog = freqpoles(fplog, Fs)
 
   ###
@@ -145,7 +145,7 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
   outf = []
   db = []
 
-  if target is 'flat':
+  if target == 'flat':
     
     # Make the target output a bandpass filter
     Bf, Af = sig.butter(4, 30/(Fs/2), 'high')
@@ -213,7 +213,7 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
     # truncate the prototype function
     taps = np.int(tmix*Fs)
 
-    print "\nmixing time(secs) = ", tmix, "; taps = ", taps
+    print("\nmixing time(secs) = ", tmix, "; taps = ", taps)
     
     if taps > 0:
       # Time reverse the array
@@ -233,38 +233,38 @@ def roomcomp(impresp, filter, target, ntaps, mixed_phase, opformat, trim, nsthre
       #data = han * data[:ntaps]
       #eqresp = np.real(conv(equalizer, data))
     else:
-      print "zero taps; skipping mixed-phase computation"
+      print("zero taps; skipping mixed-phase computation")
   if opformat in ('wav', 'wav24'):      
   # Write data
     wavwrite_24(filter, Fs, norm(np.real(equalizer)))
-    print '\nOutput format is wav24'
-    print 'Output filter length =', len(equalizer), 'taps'
-    print 'Output filter written to ' + filter
+    print('\nOutput format is wav24')
+    print('Output filter length =', len(equalizer), 'taps')
+    print('Output filter written to ' + filter)
 	
-    print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-    print "or to merge left and right channels into a stereo .wav"
-    print "\nExample: sox leq48.wav -t f32 leq48.bin"
-    print "         sox -M le148.wav req48.wav output.wav\n"
+    print("\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,")
+    print("or to merge left and right channels into a stereo .wav")
+    print("\nExample: sox leq48.wav -t f32 leq48.bin")
+    print("         sox -M le148.wav req48.wav output.wav\n")
 
   elif opformat == 'wav32':
     wavwrite_32(filter, Fs, norm(np.real(equalizer)))
-    print '\nOutput format is wav32'
-    print 'Output filter length =', len(equalizer), 'taps'
-    print 'Output filter written to ' + filter
-    print "\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,"
-    print "or to merge left and right channels into a stereo .wav"
-    print "\nExample: sox leq48.wav -t f32 leq48.bin"
-    print "         sox -M le148.wav req48.wav output.wav\n"
+    print('\nOutput format is wav32')
+    print('Output filter length =', len(equalizer), 'taps')
+    print('Output filter written to ' + filter)
+    print("\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,")
+    print("or to merge left and right channels into a stereo .wav")
+    print("\nExample: sox leq48.wav -t f32 leq48.bin")
+    print("         sox -M le148.wav req48.wav output.wav\n")
   elif opformat == 'bin':
     # direct output to bin avoids float64->pcm16->float32 conversion by going direct 
     #float64->float32
     f = open(filter, 'wb')
     norm(np.real(equalizer)).astype('float32').tofile(f)
     f.close()
-    print '\nOutput filter length =', len(equalizer), 'taps'
-    print 'Output filter written to ' + filter
+    print('\nOutput filter length =', len(equalizer), 'taps')
+    print('Output filter written to ' + filter)
   else:
-    print 'Output format not recognized, no file generated.'
+    print('Output format not recognized, no file generated.')
 
 
   ###
@@ -325,7 +325,7 @@ def wavwrite_32(fname, fs, data):
 			
 def main():
     
-	print
+	print()
 
 	mtxt = textwrap.dedent('''\
 	Python Open Room Correction (PORC), version 0.1

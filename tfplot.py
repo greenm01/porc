@@ -80,7 +80,7 @@ def tfplots(data, Fs = 44100, color = 'b', fract=3):
 
 	# creating a half hanning window
 	WL = data.size
-	hann = sp.hanning(WL*2)
+	hann = np.hanning(WL*2)
 	endwin = hann[WL:2*WL]
 	tf = fft(data*endwin, FFTSIZE)
 
@@ -104,7 +104,7 @@ def tfplots(data, Fs = 44100, color = 'b', fract=3):
 	# creating hanning window
 	# fractional octave smoothing
 	HL = 2 * np.round(octbin/fract)
-	hh = sp.hanning(HL)
+	hh = np.hanning(HL)
 	
 	L = logmagn.size
 	logmagn[L-1:L+HL] = 0
@@ -127,7 +127,7 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 
 	# creating a half hanning window
 	WL = data.size
-	hann = sp.hanning(WL*2)
+	hann = np.hanning(WL*2)
 	endwin = hann[WL:2*WL]
 	tf = fft(data*endwin, FFTSIZE)
 	compamp = tf[:FFTSIZE/2]
@@ -147,11 +147,11 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 		stop = np.minimum(stop, FFTSIZE/2)
 
 		#averaging the complex transfer function
-		if avg is 'comp':
+		if avg == 'comp':
 			logmagn[k] = np.abs(np.mean(compamp[start-1:stop]))
-		elif avg is 'abs':
+		elif avg == 'abs':
 			logmagn[k] = np.mean(np.abs(compamp[start-1:stop]))
-		elif avg is 'power':
+		elif avg == 'power':
 			logmagn[k] = np.sqrt(np.mean(np.abs(np.power(compamp[start-1:stop],2))))
 
 	# plotting
