@@ -55,7 +55,7 @@ from scipy.fftpack import ifft, fft
 from scipy.interpolate import pchip
 from scipy.io import wavfile
 from scipy.signal import convolve as conv
-from scipy.stats import kurtosis, nanstd
+from scipy.stats import kurtosis
 from scipy.stats import norm as Gaussian
 import matplotlib.pyplot as plt
 
