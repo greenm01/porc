@@ -50,7 +50,7 @@
 #
 #   C. Balazs Bank, 2006-2007.
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, missing-function-docstring, missing-module-docstring, too-many-locals
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,11 +58,16 @@ from numpy.fft import fft, ifft
 
 # Ported from Octave fftfilt.m
 
+# Constants
+OCTBIN = 100.
+FFTSIZE = 2**18
+LOGFACT = 2**(1. / OCTBIN)
+
 
 def fftfilt(b, x):
 
-    # Use FFT with the smallest power of 2 which is >= length (x) +
-    # length (b) - 1 as number of points ...
+    # Use FFT with the smallest power of 2 which is >= length (x) + length (b) - 1
+    # as number of points ...
     c_x = x.size
     c_b = b.size
     N = np.power(2, np.ceil(np.log(c_x + c_b) / np.log(2)), dtype=np.float32)
@@ -73,32 +78,28 @@ def fftfilt(b, x):
 
 def tfplots(data, Fs=44100, color='b', fract=3):
 
-    octbin = 100.
-    FFTSIZE = 2**18
-
-    logfact = 2**(1. / octbin)
-    LOGN = np.floor(np.log(Fs / 2) / np.log(logfact))
+    logn = np.floor(np.log(Fs / 2) / np.log(LOGFACT))
     # logarithmic scale from 1 Hz to Fs/2
-    logscale = np.power(logfact, np.r_[:LOGN])
+    logscale = np.power(LOGFACT, np.r_[:logn])
 
     # creating a half hanning window
-    WL = data.size
-    hann = np.hanning(WL * 2)
-    endwin = hann[WL:2 * WL]
+    wl = data.size
+    hann = np.hanning(wl * 2)
+    endwin = hann[wl:2 * wl]
     tf = fft(data * endwin, FFTSIZE)
 
     magn = np.abs(tf[:FFTSIZE / 2])
 
     # creating 100th octave resolution log. spaced data from the lin. spaced
     # FFT data
-    logmagn = np.empty(LOGN)
+    logmagn = np.empty(logn)
     fstep = Fs / np.float64(FFTSIZE)
 
     for k in range(logscale.size):
-        start = np.round(logscale[k] / np.sqrt(logfact) / fstep)
+        start = np.round(logscale[k] / np.sqrt(LOGFACT) / fstep)
         start = np.maximum(start, 1)
         start = np.minimum(start, FFTSIZE / 2)
-        stop = np.round(logscale[k] * np.sqrt(logfact) / fstep)
+        stop = np.round(logscale[k] * np.sqrt(LOGFACT) / fstep)
         stop = np.maximum(stop, 1)
         stop = np.minimum(stop, FFTSIZE / 2)
         # averaging the power
@@ -106,46 +107,43 @@ def tfplots(data, Fs=44100, color='b', fract=3):
 
     # creating hanning window
     # fractional octave smoothing
-    HL = 2 * np.round(octbin / fract)
-    hh = np.hanning(HL)
+    hl = 2 * np.round(OCTBIN / fract)
+    hh = np.hanning(hl)
 
     L = logmagn.size
-    logmagn[L - 1:L + HL] = 0
+    logmagn[L - 1:L + hl] = 0
 
     # Smoothing the log. spaced data by convonvling with the hanning window
     tmp = fftfilt(hh, np.power(logmagn, 2))
-    smoothmagn = np.sqrt(tmp[HL / 2:HL / 2 + L] / hh.sum(axis=0))
+    smoothmagn = np.sqrt(tmp[hl / 2:hl / 2 + L] / hh.sum(axis=0))
 
     # plotting
     plt.semilogx(logscale, 20 * np.log10(smoothmagn), color)
 
 
-def tfplot(data, Fs=44100, color='b', octbin=100, avg='comp'):
+def tfplot(data, Fs=44100, color='b', avg='comp'):
 
-    FFTSIZE = 2**18
-
-    logfact = 2**(1. / octbin)
-    LOGN = np.floor(np.log(Fs / 2) / np.log(logfact))
+    logn = np.floor(np.log(Fs / 2) / np.log(LOGFACT))
     # logarithmic scale from 1 Hz to Fs/2
-    logscale = np.power(logfact, np.r_[:LOGN])
+    logscale = np.power(LOGFACT, np.r_[:logn])
 
     # creating a half hanning window
-    WL = data.size
-    hann = np.hanning(WL * 2)
-    endwin = hann[WL:2 * WL]
+    wl = data.size
+    hann = np.hanning(wl * 2)
+    endwin = hann[wl:2 * wl]
     tf = fft(data * endwin, FFTSIZE)
     compamp = tf[:FFTSIZE / 2]
 
-    logmagn = np.empty(LOGN)
+    logmagn = np.empty(logn)
     fstep = Fs / np.float64(FFTSIZE)
 
     for k in range(logscale.size):
 
         # finding the start and end positions of the logaritmic bin
-        start = np.round(logscale[k] / np.sqrt(logfact) / fstep)
+        start = np.round(logscale[k] / np.sqrt(LOGFACT) / fstep)
         start = np.maximum(start, 1)
         start = np.minimum(start, FFTSIZE / 2)
-        stop = np.round(logscale[k] * np.sqrt(logfact) / fstep) - 1
+        stop = np.round(logscale[k] * np.sqrt(LOGFACT) / fstep) - 1
         stop = np.maximum(stop, start)
         stop = np.maximum(stop, 1)
         stop = np.minimum(stop, FFTSIZE / 2)
