@@ -14,6 +14,8 @@
 #
 #   C. Balazs Bank, 2010.
 
+# pylint: disable=invalid-name
+
 import numpy as np
 
 

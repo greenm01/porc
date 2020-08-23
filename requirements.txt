@@ -1,2 +1,6 @@
 scipy==1.5.2
 matplotlib==3.3.1
+pep8==1.7.1
+autopep8==1.5.4
+pylint==2.6.0
+pytest==6.0.1
