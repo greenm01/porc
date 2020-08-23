@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name, missing-module-docstring, missing-function-docstring, too-many-arguments, too-many-statements, too-many-branches, too-many-locals
 
 #
 # Python Open Room Correction (PORC)
@@ -43,12 +44,14 @@
 
 # Python libs
 
+import argparse
 import math
 import struct
 import textwrap
 import wave
 import warnings
 from contextlib import closing
+from argparse import RawTextHelpFormatter
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,14 +67,6 @@ from parfiltid import parfiltid
 
 # Ignore warnings
 warnings.filterwarnings('ignore')
-
-# Scipy, Numpy, and matplotlibs
-
-
-# PORC source files
-
-
-# pylint: disable=invalid-name
 
 # MiniDSP's OpenDRC box likes 6144 taps
 
@@ -119,7 +114,7 @@ def mad(a, c=Gaussian.ppf(3 / 4.), axis=0):  # c \approx .6745
 
 def roomcomp(
         impresp,
-        filter,
+        filter_out,
         target,
         ntaps,
         mixed_phase,
@@ -263,20 +258,20 @@ def roomcomp(
 
     if opformat in ('wav', 'wav24'):
         # Write data
-        wavwrite_24(filter, Fs, norm(np.real(equalizer)))
+        wavwrite_24(filter_out, Fs, norm(np.real(equalizer)))
         print('\nOutput format is wav24')
         print('Output filter length =', len(equalizer), 'taps')
-        print('Output filter written to ' + filter)
+        print('Output filter written to ' + filter_out)
 
         print('\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,')
         print('or to merge left and right channels into a stereo .wav')
         print('\nExample: sox leq48.wav -t f32 leq48.bin')
         print('         sox -M le148.wav req48.wav output.wav\n')
     elif opformat == 'wav32':
-        wavwrite_32(filter, Fs, norm(np.real(equalizer)))
+        wavwrite_32(filter_out, Fs, norm(np.real(equalizer)))
         print('\nOutput format is wav32')
         print('Output filter length =', len(equalizer), 'taps')
-        print('Output filter written to ' + filter)
+        print('Output filter written to ' + filter_out)
         print('\nUse sox to convert output .wav to raw 32 bit IEEE floating point if necessary,')
         print('or to merge left and right channels into a stereo .wav')
         print('\nExample: sox leq48.wav -t f32 leq48.bin')
@@ -284,11 +279,11 @@ def roomcomp(
     elif opformat == 'bin':
         # direct output to bin avoids float64->pcm16->float32 conversion by going direct
         # float64->float32
-        f = open(filter, 'wb')
+        f = open(filter_out, 'wb')
         norm(np.real(equalizer)).astype('float32').tofile(f)
         f.close()
         print('\nOutput filter length =', len(equalizer), 'taps')
-        print('Output filter written to ' + filter)
+        print('Output filter written to ' + filter_out)
     else:
         print('Output format not recognized, no file generated.')
 
@@ -369,9 +364,6 @@ def main():
 
 	See the README for detailed instructions
 	''')
-
-    import argparse
-    from argparse import RawTextHelpFormatter
 
     parser = argparse.ArgumentParser(
         description=mtxt,
