@@ -1,3 +1,4 @@
+# travis.ci configuration
 language: python
 
 python:
@@ -8,4 +9,3 @@ install:
 
 script: 
   - pytest
-
