@@ -43,6 +43,7 @@
 
 # Python libs
 
+import math
 import struct
 import textwrap
 import wave
@@ -82,19 +83,15 @@ def rceps(x):
         ym = np.hstack((y[0], 2 * y[1:n / 2], np.zeros(n / 2 - 1)))
     else:
         ym = np.hstack(
-            (y[0], 2 * y[1:n / 2],
-             y[n / 2 + 1],
-             np.zeros(n / 2 - 1)))
+            (y[0],
+             2 * y[1:math.floor(n / 2)],
+             y[math.floor(n / 2 + 1)],
+             np.zeros(math.floor(n / 2 - 1))))
     ym = np.real(ifft(np.exp(fft(ym))))
     return (y, ym)
 
 
-def parfilt(
-    Bm,
-    Am,
-    FIR,
-    x,
-):
+def parfilt(Bm, Am, FIR, x):
     y = np.zeros(x.size)
     for k in range(Am.shape[1]):
         y += np.ravel(sig.lfilter(Bm[:, k], Am[:, k], x))
@@ -121,21 +118,18 @@ def mad(a, c=Gaussian.ppf(3 / 4.), axis=0):  # c \approx .6745
 
 
 def roomcomp(
-    impresp,
-    filter,
-    target,
-    ntaps,
-    mixed_phase,
-    opformat,
-    trim,
-    nsthresh,
-    noplot,
-):
-
+        impresp,
+        filter,
+        target,
+        ntaps,
+        mixed_phase,
+        opformat,
+        trim,
+        nsthresh,
+        noplot):
     print('Loading impulse response')
 
-  # Read impulse response
-
+    # Read impulse response
     (Fs, data) = wavfile.read(impresp)
     data = norm(np.hstack(data))
 
@@ -153,98 +147,79 @@ def roomcomp(
                 break
 
     print('\nSample rate = ', Fs)
-
     print('\nGenerating correction filter')
 
-  # ##
-  # # Logarithmic pole positioning
-  # ##
-
-    fplog = np.hstack((np.logspace(np.log10(20.), np.log10(200.), 14.),
-                       np.logspace(np.log10(250.), np.log10(20000.),
-                                   13.)))
+    # ##
+    # # Logarithmic pole positioning
+    # ##
+    fplog = np.hstack((np.logspace(np.log10(20.), np.log10(200.), 14),
+                       np.logspace(np.log10(250.), np.log10(20000.), 13)))
     plog = freqpoles(fplog, Fs)
 
-  # ##
-  # # Preparing data
-  # ##
+    # ##
+    # # Preparing data
+    # ##
 
-  # making the measured response minumum-phase
-
+    # making the measured response minumum-phase
     (_, minresp) = rceps(data)
 
-  # Impulse response
-
+    # Impulse response
     imp = np.zeros(len(data), dtype=np.float64)
     imp[0] = 1.0
 
-  # Target
-
+    # Target
     outf = []
 
     if target == 'flat':
-
         # Make the target output a bandpass filter
-
         (Bf, Af) = sig.butter(4, 30 / (Fs / 2), 'high')
         outf = sig.lfilter(Bf, Af, imp)
     else:
-
         # load target file
-
         t = np.loadtxt(target)
         frq = t[:, 0]
         pwr = t[:, 1]
 
-    # calculate the FIR filter via windowing method
-
-        fir = sig.firwin2(501, frq, np.power(10, pwr / 20.),
+        # calculate the FIR filter via windowing method
+        fir = sig.firwin2(501, frq,
+                          np.power(10, pwr / 20.),
                           nyq=frq[-1])
+        # Minimum phase, zero padding....
+        (_, outf) = rceps(np.append(fir, np.zeros(len(minresp) - len(fir))))
 
-    # Minimum phase, zero padding....
+    # ##
+    # # Filter design
+    # ##
 
-        (_, outf) = rceps(np.append(fir, np.zeros(len(minresp)
-                                                  - len(fir))))
-
-  # ##
-  # # Filter design
-  # ##
-
-  # Parallel filter design
-
+    # Parallel filter design
     (Bm, Am, FIR) = parfiltid(minresp, outf, plog)
 
-  # equalized loudspeaker response - filtering the
-  # measured transfer function by the parallel filter
-
+    # equalized loudspeaker response - filtering the
+    # measured transfer function by the parallel filter
     equalizedresp = parfilt(Bm, Am, FIR, data)
 
-  # Equalizer impulse response - filtering a unit pulse
-
+    # Equalizer impulse response - filtering a unit pulse
     equalizer = norm(parfilt(Bm, Am, FIR, imp))
 
-  # Windowing with a half hanning window in time domain
-
+    # Windowing with a half hanning window in time domain
     han = np.hanning(ntaps * 2)[-ntaps:]
     equalizer = han * equalizer[:ntaps]
 
-  # ##
-  # # Mixed-phase compensation
-  # # Based on the paper "Mixed Time-Frequency approach for Multipoint
-  # # Room Rosponse Equalization," by A. Carini et al.
-  # # To use this feature, your Room Impulse Response should have all
-  # # the leading zeros removed.
-  # ##
+    ###
+    # Mixed-phase compensation
+    # Based on the paper "Mixed Time-Frequency approach for Multipoint
+    # Room Rosponse Equalization," by A. Carini et al.
+    # To use this feature, your Room Impulse Response should have all
+    # the leading zeros removed.
+    ###
 
     if mixed_phase is True:
 
         # prototype function
-
         hp = norm(np.real(equalizedresp))
 
-    # time integration of the human ear is ~24ms
-    # See "Measuring the mixing time in auditoria," by Defrance & Polack
-
+        # time integration of the human ear is ~24ms
+        # See "Measuring the mixing time in auditoria," by Defrance & Polack
         hop_size = 0.024
         samples = hop_size * Fs
 
@@ -252,8 +227,7 @@ def roomcomp(
 
         tmix = 0
 
-    # Kurtosis method
-
+        # Kurtosis method
         for b in range(bins):
             start = np.int(b * samples)
             end = np.int((b + 1) * samples)
@@ -262,45 +236,33 @@ def roomcomp(
                 tmix = b * hop_size
                 break
 
-    # truncate the prototype function
-
+        # truncate the prototype function
         taps = np.int(tmix * Fs)
 
         print('\nmixing time(secs) = ', tmix, '; taps = ', taps)
 
         if taps > 0:
-
-          # Time reverse the array
-
+            # Time reverse the array
             h = hp[:taps][::-1]
-
-      # create all pass filter
-
+            # create all pass filter
             phase = np.unwrap(np.angle(h))
             H = np.exp(1j * phase)
-
-      # convert from db to linear
-
+            # convert from db to linear
             mixed = np.power(10, np.real(H) / 20.)
-
-      # create filter's impulse response
-
+            # create filter's impulse response
             mixed = np.real(ifft(mixed))
 
-      # convolve and window to desired length
-
+            # convolve and window to desired length
             equalizer = conv(equalizer, mixed)
             equalizer = han * equalizer[:ntaps]
+
+            # data = han * data[:ntaps]
+            # eqresp = np.real(conv(equalizer, data))
         else:
-
-          # data = han * data[:ntaps]
-          # eqresp = np.real(conv(equalizer, data))
-
             print('zero taps; skipping mixed-phase computation')
+
     if opformat in ('wav', 'wav24'):
-
-      # Write data
-
+        # Write data
         wavwrite_24(filter, Fs, norm(np.real(equalizer)))
         print('\nOutput format is wav24')
         print('Output filter length =', len(equalizer), 'taps')
@@ -311,7 +273,6 @@ def roomcomp(
         print('\nExample: sox leq48.wav -t f32 leq48.bin')
         print('         sox -M le148.wav req48.wav output.wav\n')
     elif opformat == 'wav32':
-
         wavwrite_32(filter, Fs, norm(np.real(equalizer)))
         print('\nOutput format is wav32')
         print('Output filter length =', len(equalizer), 'taps')
@@ -321,10 +282,8 @@ def roomcomp(
         print('\nExample: sox leq48.wav -t f32 leq48.bin')
         print('         sox -M le148.wav req48.wav output.wav\n')
     elif opformat == 'bin':
-
         # direct output to bin avoids float64->pcm16->float32 conversion by going direct
         # float64->float32
-
         f = open(filter, 'wb')
         norm(np.real(equalizer)).astype('float32').tofile(f)
         f.close()
@@ -333,42 +292,30 @@ def roomcomp(
     else:
         print('Output format not recognized, no file generated.')
 
-  # ##
-  # # Plots
-  # ##
-
+    ###
+    # Plots
+    ###
     if not noplot:
         data *= 500
-
-    # original loudspeaker-room response
-
+        # original loudspeaker-room response
         tfplot(data, Fs, avg='abs')
-
-    # 1/3 Octave smoothed
-
+        # 1/3 Octave smoothed
         tfplots(data, Fs, 'r')
 
-    # tfplot(mixed, Fs, 'r')
+        # tfplot(mixed, Fs, 'r')
 
-    # equalizer transfer function
-
+        # equalizer transfer function
         tfplot(0.75 * equalizer, Fs, 'g')
-
-    # indicating pole frequencies
-
+        # indicating pole frequencies
         plt.vlines(fplog, -2, 2, color='k', linestyles='solid')
 
-    # equalized loudspeaker-room response
-
+        # equalized loudspeaker-room response
         tfplot(equalizedresp * 0.01, Fs, avg='abs')
-
-    # 1/3 Octave smoothed
-
+        # 1/3 Octave smoothed
         tfplots(equalizedresp * 0.01, Fs, 'r')
 
-    # Add labels
-    # May need to reposition these based on input data
-
+        # Add labels
+        # May need to reposition these based on input data
         plt.text(325, 30, 'Unequalized loudspeaker-room response')
         plt.text(100, -15, 'Equalizer transfer function')
         plt.text(100, -21, '(Black lines: pole locations)')
@@ -410,15 +357,13 @@ def main():
 
     print()
 
-    mtxt = \
-        textwrap.dedent('''\
+    mtxt = textwrap.dedent('''\
 	Python Open Room Correction (PORC), version 0.1
 	Copyright (c) 2012 Mason A. Green
 	Based on the work of Dr. Balazs Bank
 	''')
 
-    bye = \
-        textwrap.dedent('''
+    bye = textwrap.dedent('''
 	Example:
 	./porc -t b&k.txt -n 8000 l48.wav leq48.bin
 
@@ -428,20 +373,30 @@ def main():
     import argparse
     from argparse import RawTextHelpFormatter
 
-    parser = argparse.ArgumentParser(description=mtxt, epilog=bye,
-                                     formatter_class=RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=mtxt,
+        epilog=bye,
+        formatter_class=RawTextHelpFormatter)
 
     # Positionals
-
-    parser.add_argument('impresp', metavar='I', type=str,
-                        help='mesaured impulse response')
-    parser.add_argument('filter', metavar='F', type=str,
-                        help='output filter file name')
+    parser.add_argument(
+        'impresp',
+        metavar='I',
+        type=str,
+        help='mesaured impulse response')
+    parser.add_argument(
+        'filter',
+        metavar='F',
+        type=str,
+        help='output filter file name')
 
     # Options
-
-    parser.add_argument('-t', dest='target', default='flat',
-                        help='target curve', metavar='FILE')
+    parser.add_argument(
+        '-t',
+        dest='target',
+        default='flat',
+        help='target curve',
+        metavar='FILE')
     parser.add_argument(
         '-n',
         dest='ntaps',
@@ -465,10 +420,16 @@ def main():
         default=0.005,
         help='Normalized silence threshold. Default = 0.05',
         type=float)
-    parser.add_argument('--trim', action='store_true', default=False,
-                        help='Trim leading silence')
-    parser.add_argument('--noplot', action='store_true', default=False,
-                        help='Do not polt the filter')
+    parser.add_argument(
+        '--trim',
+        action='store_true',
+        default=False,
+        help='Trim leading silence')
+    parser.add_argument(
+        '--noplot',
+        action='store_true',
+        default=False,
+        help='Do not polt the filter')
 
     args = parser.parse_args()
 

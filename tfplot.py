@@ -52,6 +52,7 @@
 
 # pylint: disable=invalid-name, missing-function-docstring, missing-module-docstring, too-many-locals
 
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.fft import fft, ifft
@@ -70,7 +71,7 @@ def fftfilt(b, x):
     # as number of points ...
     c_x = x.size
     c_b = b.size
-    N = np.power(2, np.ceil(np.log(c_x + c_b) / np.log(2)), dtype=np.float32)
+    N = int(np.power(2, np.ceil(np.log(c_x + c_b) / np.log(2)), dtype=np.float32))
     y = ifft(fft(x, N) * fft(b, N))
     # Final cleanups: Both x and b are real; y should also be
     return np.real(y)
@@ -88,11 +89,11 @@ def tfplots(data, Fs=44100, color='b', fract=3):
     endwin = hann[wl:2 * wl]
     tf = fft(data * endwin, FFTSIZE)
 
-    magn = np.abs(tf[:FFTSIZE / 2])
+    magn = np.abs(tf[:math.floor(FFTSIZE / 2)])
 
     # creating 100th octave resolution log. spaced data from the lin. spaced
     # FFT data
-    logmagn = np.empty(logn)
+    logmagn = np.empty(int(logn))  # TODO: Validate conversion
     fstep = Fs / np.float64(FFTSIZE)
 
     for k in range(logscale.size):
@@ -102,12 +103,15 @@ def tfplots(data, Fs=44100, color='b', fract=3):
         stop = np.round(logscale[k] * np.sqrt(LOGFACT) / fstep)
         stop = np.maximum(stop, 1)
         stop = np.minimum(stop, FFTSIZE / 2)
+        start = int(start)
+        stop = int(stop)
+
         # averaging the power
         logmagn[k] = np.sqrt(np.mean(np.power(magn[start - 1:stop], 2)))
 
     # creating hanning window
     # fractional octave smoothing
-    hl = 2 * np.round(OCTBIN / fract)
+    hl = int(2 * np.round(OCTBIN / fract))
     hh = np.hanning(hl)
 
     L = logmagn.size
@@ -115,7 +119,7 @@ def tfplots(data, Fs=44100, color='b', fract=3):
 
     # Smoothing the log. spaced data by convonvling with the hanning window
     tmp = fftfilt(hh, np.power(logmagn, 2))
-    smoothmagn = np.sqrt(tmp[hl / 2:hl / 2 + L] / hh.sum(axis=0))
+    smoothmagn = np.sqrt(tmp[int(hl / 2):int(hl / 2) + L] / hh.sum(axis=0))
 
     # plotting
     plt.semilogx(logscale, 20 * np.log10(smoothmagn), color)
@@ -132,9 +136,9 @@ def tfplot(data, Fs=44100, color='b', avg='comp'):
     hann = np.hanning(wl * 2)
     endwin = hann[wl:2 * wl]
     tf = fft(data * endwin, FFTSIZE)
-    compamp = tf[:FFTSIZE / 2]
+    compamp = tf[:math.floor(FFTSIZE / 2)]
 
-    logmagn = np.empty(logn)
+    logmagn = np.empty(math.floor(logn))
     fstep = Fs / np.float64(FFTSIZE)
 
     for k in range(logscale.size):
@@ -146,7 +150,9 @@ def tfplot(data, Fs=44100, color='b', avg='comp'):
         stop = np.round(logscale[k] * np.sqrt(LOGFACT) / fstep) - 1
         stop = np.maximum(stop, start)
         stop = np.maximum(stop, 1)
-        stop = np.minimum(stop, FFTSIZE / 2)
+        stop = np.minimum(stop, math.floor(FFTSIZE / 2))
+        start = int(start)
+        stop = int(stop)
 
         # averaging the complex transfer function
         if avg == 'comp':
