@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/randomsamples/porc.svg?branch=master)](https://travis-ci.com/randomsamples/porc)
+
 Python Open Room Correction (PORC)
 ==================================
 
@@ -107,6 +109,7 @@ TODO
 	Implement algo to automatically remove leading silence (zeros) from RIR.
 	Add a GUI Frontend (pretty interactive graphs, drawing target curve, etc...)
 	Update this page with better documentation!
+
 
 Contact
 =======
