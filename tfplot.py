@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name, missing-function-docstring, missing-module-docstring, too-many-locals, fixme
+
 # Python Open Room Correction (PORC)
 # Copyright (c) 2012 Mason A. Green
 # All rights reserved.
@@ -49,8 +51,6 @@
 #   magnitude (i.e., this is the default).
 #
 #   C. Balazs Bank, 2006-2007.
-
-# pylint: disable=invalid-name, missing-function-docstring, missing-module-docstring, too-many-locals
 
 import math
 import numpy as np

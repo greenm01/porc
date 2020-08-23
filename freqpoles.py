@@ -1,5 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name, missing-module-docstring, missing-function-docstring
+
 # FREQPOLES - Pole set generation for the PARFILTDES function.
 #   [P]=freqpoles(FR,Fs) creates poles from the given frequency vector
 #   FR with sampling frequency Fs such that the frequency responses
@@ -13,8 +15,6 @@
 #   is DeltaF=FR/Q.)
 #
 #   C. Balazs Bank, 2010.
-
-# pylint: disable=invalid-name
 
 import numpy as np
 

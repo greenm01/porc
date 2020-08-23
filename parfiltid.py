@@ -1,5 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name, missing-module-docstring, missing-function-docstring, too-many-locals
+
 # Python Open Room Correction (PORC)
 # Copyright (c) 2012 Mason A. Green
 # All rights reserved.
@@ -57,14 +59,12 @@
 #
 #   C. Balazs Bank, Helsinki University of Technology, 2007.
 
-# pylint: disable=invalid-name
-
 import numpy as np
 import scipy.signal as sig
 
 
 def parfiltid(
-    input,
+    min_resp,
     out,
     p,
     NFIR=1,
@@ -97,22 +97,22 @@ def parfiltid(
         ODD = 1
 
     OUTL = len(out)
-    INL = len(input)
+    INL = len(min_resp)
 
     # making input the same length as the output
 
     if INL > OUTL:
-        input = input[:OUTL]
+        min_resp = min_resp[:OUTL]
 
     if INL < OUTL:
-        input = np.hstack([input, np.zeros(OUTL - INL,
-                                           dtype=np.float64)])
+        min_resp = np.hstack([min_resp, np.zeros(OUTL - INL,
+                                                 dtype=np.float64)])
 
     L = OUTL
 
     # Allocate memory
 
-    M = np.zeros((input.size, p.size + NFIR), dtype=np.float64)
+    M = np.zeros((min_resp.size, p.size + NFIR), dtype=np.float64)
 
     # constructing the modeling signal matrix....
 
@@ -120,7 +120,7 @@ def parfiltid(
 
         # impluse response of the two-pole filter
 
-        resp = sig.lfilter(np.array([1]), np.poly(p[k:k + 2]), input)
+        resp = sig.lfilter(np.array([1]), np.poly(p[k:k + 2]), min_resp)
         M[:, k] = resp
 
         # the response delayed by one sample
@@ -130,14 +130,14 @@ def parfiltid(
     # if the number of poles is odd, we have a first-order section
 
     if ODD:
-        resp = sig.lfilter(np.array([1]), np.poly(p[-1]), input)
+        resp = sig.lfilter(np.array([1]), np.poly(p[-1]), min_resp)
         M[:, pnum - 1] = resp
 
     # parallel FIR part
 
     for k in range(0, NFIR):
         M[:, pnum + k] = np.hstack([np.zeros(k, dtype=np.float64),
-                                    input[:L - k + 1]])
+                                    min_resp[:L - k + 1]])
 
     y = out
 
