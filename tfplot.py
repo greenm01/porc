@@ -147,11 +147,11 @@ def tfplot(data, Fs = 44100, color = 'b', octbin = 100, avg = 'comp'):
 		stop = np.minimum(stop, FFTSIZE/2)
 
 		#averaging the complex transfer function
-		if avg is 'comp':
+		if avg == 'comp':
 			logmagn[k] = np.abs(np.mean(compamp[start-1:stop]))
-		elif avg is 'abs':
+		elif avg == 'abs':
 			logmagn[k] = np.mean(np.abs(compamp[start-1:stop]))
-		elif avg is 'power':
+		elif avg == 'power':
 			logmagn[k] = np.sqrt(np.mean(np.abs(np.power(compamp[start-1:stop],2))))
 
 	# plotting
